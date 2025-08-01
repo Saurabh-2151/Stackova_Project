@@ -85,7 +85,7 @@ class FooterSection extends StatelessWidget {
             margin: EdgeInsets.symmetric(
               horizontal: isMobile ? 20 : (isTablet ? 40 : 80),
             ),
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withValues(alpha: 0.1),
           ),
 
           // Bottom Footer
@@ -101,7 +101,7 @@ class FooterSection extends StatelessWidget {
                     '© 2024 Stackova. All rights reserved.',
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -115,7 +115,7 @@ class FooterSection extends StatelessWidget {
                         '© 2024 Stackova. All rights reserved.',
                         style: GoogleFonts.inter(
                           fontSize: 14,
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                         ),
                       ),
                       _buildSocialLinks(),
@@ -173,7 +173,7 @@ class FooterSection extends StatelessWidget {
             'We create innovative digital solutions that transform businesses and deliver exceptional user experiences.',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               height: 1.6,
             ),
             textAlign: isMobile ? TextAlign.center : TextAlign.left,
@@ -204,7 +204,7 @@ class FooterSection extends StatelessWidget {
                 link,
                 style: GoogleFonts.inter(
                   fontSize: 14,
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                 ),
               ),
             )),
@@ -238,7 +238,7 @@ class FooterSection extends StatelessWidget {
                 service,
                 style: GoogleFonts.inter(
                   fontSize: 14,
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                 ),
               ),
             )),
@@ -294,7 +294,7 @@ class FooterSection extends StatelessWidget {
           text,
           style: GoogleFonts.inter(
             fontSize: 14,
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
           ),
         ),
       ],
@@ -318,13 +318,13 @@ class FooterSection extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
               size: 16,
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
             ),
           ),
         );

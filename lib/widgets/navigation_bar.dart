@@ -19,7 +19,6 @@ class CustomNavigationBar extends StatefulWidget {
 class _CustomNavigationBarState extends State<CustomNavigationBar>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
   bool _isMobileMenuOpen = false;
 
   @override
@@ -28,9 +27,6 @@ class _CustomNavigationBarState extends State<CustomNavigationBar>
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
@@ -61,13 +57,13 @@ class _CustomNavigationBarState extends State<CustomNavigationBar>
       duration: const Duration(milliseconds: 300),
       height: 80,
       decoration: BoxDecoration(
-        color: widget.isScrolled 
-            ? Colors.white.withOpacity(0.95)
+        color: widget.isScrolled
+            ? Colors.white.withValues(alpha: 0.95)
             : Colors.transparent,
         boxShadow: widget.isScrolled
             ? [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),

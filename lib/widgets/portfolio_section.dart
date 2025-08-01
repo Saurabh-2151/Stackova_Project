@@ -269,7 +269,7 @@ class _PortfolioSectionState extends State<PortfolioSection>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -287,8 +287,8 @@ class _PortfolioSectionState extends State<PortfolioSection>
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFF3B82F6).withOpacity(0.8),
-                    const Color(0xFF1E40AF).withOpacity(0.8),
+                    const Color(0xFF3B82F6).withValues(alpha: 0.8),
+                    const Color(0xFF1E40AF).withValues(alpha: 0.8),
                   ],
                 ),
               ),
@@ -296,7 +296,7 @@ class _PortfolioSectionState extends State<PortfolioSection>
                 child: Icon(
                   Icons.web,
                   size: 60,
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                 ),
               ),
             ),
@@ -343,7 +343,7 @@ class _PortfolioSectionState extends State<PortfolioSection>
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF3B82F6).withOpacity(0.1),
+                          color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(

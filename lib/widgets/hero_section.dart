@@ -2,7 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:responsive_framework/responsive_framework.dart';
+import 'package:video_player/video_player.dart';
 
+/// Hero section widget with video background
+///
+/// Features:
+/// - Video background with autoplay, loop, and mute
+/// - Responsive video scaling that covers full background
+/// - Fallback gradient background for loading/error states
+/// - Optimized for web performance with proper error handling
+/// - Text overlay with proper contrast for readability
+/// - Smooth animations and floating particles
 class HeroSection extends StatefulWidget {
   const HeroSection({super.key});
 
@@ -17,20 +27,27 @@ class _HeroSectionState extends State<HeroSection>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  // Video controller and state
+  VideoPlayerController? _videoController;
+  bool _isVideoInitialized = false;
+  bool _hasVideoError = false;
+
   @override
   void initState() {
     super.initState();
-    
+
+    // Initialize animation controllers
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
 
+    // Initialize animations
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -47,6 +64,9 @@ class _HeroSectionState extends State<HeroSection>
       curve: Curves.easeOutCubic,
     ));
 
+    // Initialize video controller
+    _initializeVideo();
+
     // Start animations
     Future.delayed(const Duration(milliseconds: 500), () {
       _fadeController.forward();
@@ -54,8 +74,60 @@ class _HeroSectionState extends State<HeroSection>
     });
   }
 
+  void _initializeVideo() async {
+    try {
+      _videoController = VideoPlayerController.asset('assets/homeVedio.mp4');
+
+      // Add listener for video player state changes
+      _videoController!.addListener(_onVideoPlayerStateChanged);
+
+      await _videoController!.initialize();
+
+      if (mounted) {
+        setState(() {
+          _isVideoInitialized = true;
+          _hasVideoError = false;
+        });
+
+        // Configure video settings for web optimization
+        _videoController!.setLooping(true);
+        _videoController!.setVolume(0.0); // Muted by default for autoplay compliance
+
+        // Start playing with a small delay to ensure proper initialization
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted && _videoController != null) {
+            _videoController!.play();
+          }
+        });
+      }
+    } catch (error) {
+      debugPrint('Video initialization error: $error');
+      if (mounted) {
+        setState(() {
+          _isVideoInitialized = false;
+          _hasVideoError = true;
+        });
+      }
+    }
+  }
+
+  void _onVideoPlayerStateChanged() {
+    if (_videoController != null && mounted) {
+      // Handle video player errors
+      if (_videoController!.value.hasError) {
+        debugPrint('Video player error: ${_videoController!.value.errorDescription}');
+        setState(() {
+          _hasVideoError = true;
+          _isVideoInitialized = false;
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
+    _videoController?.removeListener(_onVideoPlayerStateChanged);
+    _videoController?.dispose();
     _fadeController.dispose();
     _slideController.dispose();
     super.dispose();
@@ -65,24 +137,67 @@ class _HeroSectionState extends State<HeroSection>
   Widget build(BuildContext context) {
     final isMobile = ResponsiveBreakpoints.of(context).isMobile;
     final isTablet = ResponsiveBreakpoints.of(context).isTablet;
-    
-    return Container(
+
+    return SizedBox(
       height: MediaQuery.of(context).size.height,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0F172A),
-            Color(0xFF1E293B),
-            Color(0xFF334155),
-          ],
-        ),
-      ),
       child: Stack(
         children: [
-          // Animated background particles
-          ...List.generate(20, (index) => _buildFloatingParticle(index)),
+          // Video background
+          if (_isVideoInitialized && _videoController != null)
+            Positioned.fill(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _videoController!.value.size.width,
+                  height: _videoController!.value.size.height,
+                  child: VideoPlayer(_videoController!),
+                ),
+              ),
+            ),
+
+          // Fallback gradient background (shown when video is loading or failed)
+          if (!_isVideoInitialized || _hasVideoError)
+            Positioned.fill(
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF0F172A),
+                      Color(0xFF1E293B),
+                      Color(0xFF334155),
+                    ],
+                  ),
+                ),
+                child: !_hasVideoError && !_isVideoInitialized
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+
+          // Dark overlay for text readability
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.2),
+                    Colors.black.withValues(alpha: 0.4),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Optimized animated background particles (reduced count for better performance)
+          ...List.generate(8, (index) => _buildFloatingParticle(index)),
           
           // Main content
           Padding(
@@ -168,7 +283,7 @@ class _HeroSectionState extends State<HeroSection>
                         style: GoogleFonts.inter(
                           fontSize: isMobile ? 16 : 18,
                           fontWeight: FontWeight.w400,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                           height: 1.6,
                         ),
                         textAlign: TextAlign.center,
@@ -228,7 +343,7 @@ class _HeroSectionState extends State<HeroSection>
                 width: 4,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.white.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -252,7 +367,7 @@ class _HeroSectionState extends State<HeroSection>
               : null,
           border: isPrimary
               ? null
-              : Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+              : Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
           borderRadius: BorderRadius.circular(30),
         ),
         child: Text(

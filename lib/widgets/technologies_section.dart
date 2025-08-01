@@ -205,7 +205,7 @@ class _TechnologiesSectionState extends State<TechnologiesSection>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 25,
             offset: const Offset(0, 10),
           ),
@@ -254,10 +254,10 @@ class _TechnologiesSectionState extends State<TechnologiesSection>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: tech.color.withOpacity(0.1),
+                color: tech.color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: tech.color.withOpacity(0.3),
+                  color: tech.color.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),

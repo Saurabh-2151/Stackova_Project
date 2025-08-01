@@ -273,7 +273,7 @@ class _AboutSectionState extends State<AboutSection>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3B82F6).withOpacity(0.3),
+            color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -296,7 +296,7 @@ class _AboutSectionState extends State<AboutSection>
             style: GoogleFonts.inter(
               fontSize: isMobile ? 12 : 14,
               fontWeight: FontWeight.w500,
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
             ),
             textAlign: TextAlign.center,
           ),
