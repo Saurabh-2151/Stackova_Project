@@ -47,27 +47,31 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            controller: _scrollController,
-            child: Column(
-              children: [
-                const HeroSection(),
-                const ServicesSection(),
-                const AboutSection(),
-                const TechnologiesSection(),
-                const PortfolioSection(),
-                const ContactSection(),
-                const FooterSection(),
-              ],
+      body: SafeArea(
+        top: false, // Allow hero section to extend to top
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              controller: _scrollController,
+              physics: const ClampingScrollPhysics(), // Prevent overscroll
+              child: Column(
+                children: [
+                  const HeroSection(),
+                  const ServicesSection(),
+                  const AboutSection(),
+                  const TechnologiesSection(),
+                  const PortfolioSection(),
+                  const ContactSection(),
+                  const FooterSection(),
+                ],
+              ),
             ),
-          ),
           CustomNavigationBar(
             isScrolled: _isScrolled,
             scrollController: _scrollController,
           ),
         ],
+        ),
       ),
     );
   }

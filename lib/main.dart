@@ -29,12 +29,15 @@ class StackovaApp extends StatelessWidget {
         useMaterial3: true,
       ),
       builder: (context, child) => ResponsiveBreakpoints.builder(
-        child: child!,
+        child: MaxWidthBox(
+          maxWidth: 1920, // Prevent content from stretching too wide
+          child: ClampingScrollWrapper.builder(context, child!),
+        ),
         breakpoints: [
-          const Breakpoint(start: 0, end: 450, name: MOBILE),
-          const Breakpoint(start: 451, end: 800, name: TABLET),
-          const Breakpoint(start: 801, end: 1920, name: DESKTOP),
-          const Breakpoint(start: 1921, end: double.infinity, name: '4K'),
+          const Breakpoint(start: 0, end: 599, name: MOBILE),
+          const Breakpoint(start: 600, end: 1023, name: TABLET),
+          const Breakpoint(start: 1024, end: 1439, name: DESKTOP),
+          const Breakpoint(start: 1440, end: double.infinity, name: '4K'),
         ],
       ),
       home: const HomeScreen(),

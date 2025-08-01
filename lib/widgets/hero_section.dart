@@ -296,26 +296,31 @@ class _HeroSectionState extends State<HeroSection>
                   // CTA Buttons
                   FadeTransition(
                     opacity: _fadeAnimation,
-                    child: Wrap(
-                      spacing: 20,
-                      runSpacing: 20,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        _buildCTAButton(
-                          'Get Started',
-                          true,
-                          () {
-                            // Scroll to contact section
-                          },
-                        ),
-                        _buildCTAButton(
-                          'View Portfolio',
-                          false,
-                          () {
-                            // Scroll to portfolio section
-                          },
-                        ),
-                      ],
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: isMobile ? double.infinity : 500,
+                      ),
+                      child: Wrap(
+                        spacing: isMobile ? 12 : 20,
+                        runSpacing: isMobile ? 12 : 20,
+                        alignment: WrapAlignment.center,
+                        children: [
+                          _buildCTAButton(
+                            'Get Started',
+                            true,
+                            () {
+                              // Scroll to contact section
+                            },
+                          ),
+                          _buildCTAButton(
+                            'View Portfolio',
+                            false,
+                            () {
+                              // Scroll to portfolio section
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -355,10 +360,19 @@ class _HeroSectionState extends State<HeroSection>
   }
 
   Widget _buildCTAButton(String text, bool isPrimary, VoidCallback onTap) {
+    final isMobile = ResponsiveBreakpoints.of(context).isMobile;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        constraints: BoxConstraints(
+          minWidth: isMobile ? 120 : 140,
+          minHeight: 48, // Ensure touch-friendly height
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 24 : 32,
+          vertical: isMobile ? 12 : 16,
+        ),
         decoration: BoxDecoration(
           gradient: isPrimary
               ? const LinearGradient(
@@ -370,12 +384,15 @@ class _HeroSectionState extends State<HeroSection>
               : Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
           borderRadius: BorderRadius.circular(30),
         ),
-        child: Text(
-          text,
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+        child: Center(
+          child: Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: isMobile ? 14 : 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+            textAlign: TextAlign.center,
           ),
         ),
       ),
