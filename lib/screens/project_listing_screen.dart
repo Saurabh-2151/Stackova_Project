@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:responsive_framework/responsive_framework.dart';
-import '../models/project_data.dart';
+import '../models/project.dart';
+import '../data/projects_data.dart';
 import '../widgets/navigation_bar.dart';
+import '../widgets/project_card.dart';
 
 class ProjectListingScreen extends StatefulWidget {
   final String projectType;
@@ -57,7 +58,26 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
   }
 
   void _loadProjects() {
-    _allProjects = ProjectData.getProjectsByType(widget.projectType);
+    if (widget.projectType == 'all') {
+      _allProjects = ProjectsData.getAllProjects();
+    } else {
+      // Map project types to categories
+      String category = '';
+      switch (widget.projectType) {
+        case 'web':
+          category = 'Web App';
+          break;
+        case 'android':
+          category = 'Android App';
+          break;
+        case 'ios':
+          category = 'iOS App';
+          break;
+        default:
+          category = 'Web App';
+      }
+      _allProjects = ProjectsData.getProjectsByCategory(category);
+    }
     _filteredProjects = _allProjects;
   }
 
@@ -231,8 +251,8 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
             alignment: WrapAlignment.center,
             children: [
               _buildCategoryChip('all', 'All Categories', isMobile),
-              ...ProjectData.categories.map((category) {
-                return _buildCategoryChip(category.id, category.name, isMobile);
+              ...ProjectsData.getAllCategories().skip(1).map((category) {
+                return _buildCategoryChip(category.toLowerCase().replaceAll(' ', '_'), category, isMobile);
               }),
             ],
           ),
@@ -364,7 +384,10 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
                   ),
                   itemCount: _filteredProjects.length,
                   itemBuilder: (context, index) {
-                    return _buildProjectCard(_filteredProjects[index], constraints.maxWidth < 600);
+                    return ProjectCard(
+                      project: _filteredProjects[index],
+                      isCompact: constraints.maxWidth < 600,
+                    );
                   },
                 );
               },
@@ -409,85 +432,5 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
     );
   }
 
-  Widget _buildProjectCard(Project project, bool isMobile) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(isMobile ? 16 : 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Project Title
-            Text(
-              project.title,
-              style: GoogleFonts.inter(
-                fontSize: isMobile ? 16 : 18,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF1E293B),
-                height: 1.3,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            
-            const SizedBox(height: 12),
-            
-            // Project Description
-            Expanded(
-              child: Text(
-                project.description,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: const Color(0xFF64748B),
-                  height: 1.5,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Technologies
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: project.technologies.take(3).map((tech) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: widget.color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    tech,
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      color: widget.color,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 }

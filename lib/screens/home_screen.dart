@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../widgets/navigation_bar.dart';
 import '../widgets/hero_section.dart';
 import '../widgets/services_section.dart';
@@ -7,72 +8,54 @@ import '../widgets/technologies_section.dart';
 import '../widgets/portfolio_section.dart';
 import '../widgets/contact_section.dart';
 import '../widgets/footer_section.dart';
+import '../bloc/navigation/navigation_bloc.dart';
+import '../bloc/navigation/navigation_state.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final ScrollController _scrollController = ScrollController();
-  bool _isScrolled = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.offset > 100 && !_isScrolled) {
-      setState(() {
-        _isScrolled = true;
-      });
-    } else if (_scrollController.offset <= 100 && _isScrolled) {
-      setState(() {
-        _isScrolled = false;
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        top: false, // Allow hero section to extend to top
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              controller: _scrollController,
-              physics: const ClampingScrollPhysics(), // Prevent overscroll
-              child: Column(
-                children: [
-                  const HeroSection(),
-                  const ServicesSection(),
-                  const AboutSection(),
-                  const TechnologiesSection(),
-                  const PortfolioSection(),
-                  const ContactSection(),
-                  const FooterSection(),
-                ],
-              ),
+    return BlocBuilder<NavigationBloc, NavigationState>(
+      builder: (context, state) {
+        final navigationBloc = context.read<NavigationBloc>();
+        bool isScrolled = false;
+
+        if (state is NavigationScrolled) {
+          isScrolled = state.isScrolled;
+        } else if (state is NavigationMobileMenuToggled) {
+          isScrolled = state.isScrolled;
+        }
+
+        return Scaffold(
+          body: SafeArea(
+            top: false, // Allow hero section to extend to top
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  controller: navigationBloc.scrollController,
+                  physics: const ClampingScrollPhysics(), // Prevent overscroll
+                  child: const Column(
+                    children: [
+                      HeroSection(),
+                      ServicesSection(),
+                      AboutSection(),
+                      TechnologiesSection(),
+                      PortfolioSection(),
+                      ContactSection(),
+                      FooterSection(),
+                    ],
+                  ),
+                ),
+                CustomNavigationBar(
+                  isScrolled: isScrolled,
+                  scrollController: navigationBloc.scrollController,
+                ),
+              ],
             ),
-          CustomNavigationBar(
-            isScrolled: _isScrolled,
-            scrollController: _scrollController,
           ),
-        ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

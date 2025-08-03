@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:video_player/video_player.dart';
+import '../bloc/hero/hero_bloc.dart';
+import '../bloc/hero/hero_state.dart';
 
 /// Hero section widget with video background
 ///
@@ -22,114 +25,18 @@ class HeroSection extends StatefulWidget {
 
 class _HeroSectionState extends State<HeroSection>
     with TickerProviderStateMixin {
-  late AnimationController _fadeController;
-  late AnimationController _slideController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-
-  // Video controller and state
-  VideoPlayerController? _videoController;
-  bool _isVideoInitialized = false;
-  bool _hasVideoError = false;
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize animation controllers
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    );
-
-    // Initialize animations
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeOut,
-    ));
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.5),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    ));
-
-    // Initialize video controller
-    _initializeVideo();
-
-    // Start animations
-    Future.delayed(const Duration(milliseconds: 500), () {
-      _fadeController.forward();
-      _slideController.forward();
-    });
-  }
-
-  void _initializeVideo() async {
-    try {
-      _videoController = VideoPlayerController.asset('assets/homeVedio.mp4');
-
-      // Add listener for video player state changes
-      _videoController!.addListener(_onVideoPlayerStateChanged);
-
-      await _videoController!.initialize();
-
-      if (mounted) {
-        setState(() {
-          _isVideoInitialized = true;
-          _hasVideoError = false;
-        });
-
-        // Configure video settings for web optimization
-        _videoController!.setLooping(true);
-        _videoController!.setVolume(0.0); // Muted by default for autoplay compliance
-
-        // Start playing with a small delay to ensure proper initialization
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted && _videoController != null) {
-            _videoController!.play();
-          }
-        });
-      }
-    } catch (error) {
-      debugPrint('Video initialization error: $error');
-      if (mounted) {
-        setState(() {
-          _isVideoInitialized = false;
-          _hasVideoError = true;
-        });
-      }
-    }
-  }
-
-  void _onVideoPlayerStateChanged() {
-    if (_videoController != null && mounted) {
-      // Handle video player errors
-      if (_videoController!.value.hasError) {
-        debugPrint('Video player error: ${_videoController!.value.errorDescription}');
-        setState(() {
-          _hasVideoError = true;
-          _isVideoInitialized = false;
-        });
-      }
-    }
+    // Initialize animation controllers in the BLoC
+    final heroBloc = context.read<HeroBloc>();
+    heroBloc.initializeAnimationControllers(this);
   }
 
   @override
   void dispose() {
-    _videoController?.removeListener(_onVideoPlayerStateChanged);
-    _videoController?.dispose();
-    _fadeController.dispose();
-    _slideController.dispose();
     super.dispose();
   }
 
@@ -138,47 +45,51 @@ class _HeroSectionState extends State<HeroSection>
     final isMobile = ResponsiveBreakpoints.of(context).isMobile;
     final isTablet = ResponsiveBreakpoints.of(context).isTablet;
 
-    return SizedBox(
-      height: MediaQuery.of(context).size.height,
-      child: Stack(
-        children: [
-          // Video background
-          if (_isVideoInitialized && _videoController != null)
-            Positioned.fill(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: _videoController!.value.size.width,
-                  height: _videoController!.value.size.height,
-                  child: VideoPlayer(_videoController!),
-                ),
-              ),
-            ),
+    return BlocBuilder<HeroBloc, HeroState>(
+      builder: (context, state) {
+        final heroBloc = context.read<HeroBloc>();
 
-          // Fallback gradient background (shown when video is loading or failed)
-          if (!_isVideoInitialized || _hasVideoError)
-            Positioned.fill(
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF0F172A),
-                      Color(0xFF1E293B),
-                      Color(0xFF334155),
-                    ],
+        return SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: Stack(
+            children: [
+              // Video background
+              if (state is HeroLoaded && state.isVideoInitialized && state.videoController != null)
+                Positioned.fill(
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: state.videoController!.value.size.width,
+                      height: state.videoController!.value.size.height,
+                      child: VideoPlayer(state.videoController!),
+                    ),
                   ),
                 ),
-                child: !_hasVideoError && !_isVideoInitialized
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : null,
-              ),
-            ),
+
+              // Fallback gradient background (shown when video is loading or failed)
+              if (state is! HeroLoaded || !state.isVideoInitialized || state.showFallback)
+                Positioned.fill(
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF0F172A),
+                          Color(0xFF1E293B),
+                          Color(0xFF334155),
+                        ],
+                      ),
+                    ),
+                    child: (state is HeroLoading || (state is HeroLoaded && !state.isVideoInitialized && !state.showFallback))
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
 
           // Dark overlay for text readability
           Positioned.fill(
@@ -211,9 +122,9 @@ class _HeroSectionState extends State<HeroSection>
                 children: [
                   // Company name with fade animation
                   FadeTransition(
-                    opacity: _fadeAnimation,
+                    opacity: heroBloc.fadeAnimation,
                     child: SlideTransition(
-                      position: _slideAnimation,
+                      position: heroBloc.slideAnimation,
                       child: Text(
                         'STACKOVA',
                         style: GoogleFonts.inter(
@@ -273,7 +184,7 @@ class _HeroSectionState extends State<HeroSection>
                   
                   // Description
                   FadeTransition(
-                    opacity: _fadeAnimation,
+                    opacity: heroBloc.fadeAnimation,
                     child: Container(
                       constraints: BoxConstraints(
                         maxWidth: isMobile ? double.infinity : 600,
@@ -295,7 +206,7 @@ class _HeroSectionState extends State<HeroSection>
                   
                   // CTA Buttons
                   FadeTransition(
-                    opacity: _fadeAnimation,
+                    opacity: heroBloc.fadeAnimation,
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
                         maxWidth: isMobile ? double.infinity : 500,
@@ -329,6 +240,8 @@ class _HeroSectionState extends State<HeroSection>
           ),
         ],
       ),
+        );
+      },
     );
   }
 

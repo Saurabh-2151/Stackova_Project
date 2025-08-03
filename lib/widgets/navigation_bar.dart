@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:responsive_framework/responsive_framework.dart';
+import '../bloc/navigation/navigation_bloc.dart';
+import '../bloc/navigation/navigation_event.dart';
+import '../bloc/navigation/navigation_state.dart';
 
-class CustomNavigationBar extends StatefulWidget {
+class CustomNavigationBar extends StatelessWidget {
   final bool isScrolled;
   final ScrollController scrollController;
 
@@ -12,64 +16,38 @@ class CustomNavigationBar extends StatefulWidget {
     required this.scrollController,
   });
 
-  @override
-  State<CustomNavigationBar> createState() => _CustomNavigationBarState();
-}
-
-class _CustomNavigationBarState extends State<CustomNavigationBar>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  bool _isMobileMenuOpen = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  void _scrollToSection(double offset) {
-    widget.scrollController.animateTo(
-      offset,
-      duration: const Duration(milliseconds: 800),
-      curve: Curves.easeInOut,
-    );
-    if (_isMobileMenuOpen) {
-      setState(() {
-        _isMobileMenuOpen = false;
-      });
-    }
+  void _scrollToSection(BuildContext context, double offset) {
+    context.read<NavigationBloc>().add(NavigateToSection(offset));
   }
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = ResponsiveBreakpoints.of(context).isMobile;
+    return BlocBuilder<NavigationBloc, NavigationState>(
+      builder: (context, state) {
+        final isMobile = ResponsiveBreakpoints.of(context).isMobile;
+        bool isMobileMenuOpen = false;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      height: 80,
-      decoration: BoxDecoration(
-        color: widget.isScrolled
-            ? Colors.white.withValues(alpha: 0.95)
-            : Colors.transparent,
-        boxShadow: widget.isScrolled
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
-      ),
+        if (state is NavigationMobileMenuToggled) {
+          isMobileMenuOpen = state.isMenuOpen;
+        }
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          height: 80,
+          decoration: BoxDecoration(
+            color: isScrolled
+                ? Colors.white.withValues(alpha: 0.95)
+                : Colors.transparent,
+            boxShadow: isScrolled
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: isMobile ? 20 : 50,
@@ -79,7 +57,7 @@ class _CustomNavigationBarState extends State<CustomNavigationBar>
           children: [
             // Logo
             GestureDetector(
-              onTap: () => _scrollToSection(0),
+              onTap: () => _scrollToSection(context, 0),
               child: Row(
                 children: [
                   Container(
@@ -88,7 +66,7 @@ class _CustomNavigationBarState extends State<CustomNavigationBar>
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
                       // Add subtle shadow for better visibility
-                      boxShadow: widget.isScrolled ? [
+                      boxShadow: isScrolled ? [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 4,
@@ -128,7 +106,7 @@ class _CustomNavigationBarState extends State<CustomNavigationBar>
                       style: GoogleFonts.inter(
                         fontSize: isMobile ? 20 : 24,
                         fontWeight: FontWeight.bold,
-                        color: widget.isScrolled ? Colors.black : Colors.white,
+                        color: isScrolled ? Colors.black : Colors.white,
                       ),
                     ),
                 ],
@@ -141,12 +119,12 @@ class _CustomNavigationBarState extends State<CustomNavigationBar>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildNavItem('Home', () => _scrollToSection(0)),
-                    _buildNavItem('Services', () => _scrollToSection(800)),
-                    _buildNavItem('About', () => _scrollToSection(1600)),
-                    _buildNavItem('Technologies', () => _scrollToSection(2400)),
-                    _buildNavItem('Portfolio', () => _scrollToSection(3200)),
-                    _buildNavItem('Contact', () => _scrollToSection(4000)),
+                    _buildNavItem(context, 'Home', () => _scrollToSection(context, 0)),
+                    _buildNavItem(context, 'Services', () => _scrollToSection(context, 800)),
+                    _buildNavItem(context, 'About', () => _scrollToSection(context, 1600)),
+                    _buildNavItem(context, 'Technologies', () => _scrollToSection(context, 2400)),
+                    _buildNavItem(context, 'Portfolio', () => _scrollToSection(context, 3200)),
+                    _buildNavItem(context, 'Contact', () => _scrollToSection(context, 4000)),
                   ],
                 ),
               ),
@@ -154,13 +132,11 @@ class _CustomNavigationBarState extends State<CustomNavigationBar>
               // Mobile Menu Button
               IconButton(
                 onPressed: () {
-                  setState(() {
-                    _isMobileMenuOpen = !_isMobileMenuOpen;
-                  });
+                  context.read<NavigationBloc>().add(const ToggleMobileMenu());
                 },
                 icon: Icon(
-                  _isMobileMenuOpen ? Icons.close : Icons.menu,
-                  color: widget.isScrolled ? Colors.black : Colors.white,
+                  isMobileMenuOpen ? Icons.close : Icons.menu,
+                  color: isScrolled ? Colors.black : Colors.white,
                   size: 28,
                 ),
               ),
@@ -168,10 +144,12 @@ class _CustomNavigationBarState extends State<CustomNavigationBar>
           ],
         ),
       ),
+        );
+      },
     );
   }
 
-  Widget _buildNavItem(String title, VoidCallback onTap) {
+  Widget _buildNavItem(BuildContext context, String title, VoidCallback onTap) {
     final isTablet = ResponsiveBreakpoints.of(context).isTablet;
 
     return Padding(
@@ -186,7 +164,7 @@ class _CustomNavigationBarState extends State<CustomNavigationBar>
             style: GoogleFonts.inter(
               fontSize: isTablet ? 14 : 16,
               fontWeight: FontWeight.w500,
-              color: widget.isScrolled ? Colors.black : Colors.white,
+              color: isScrolled ? Colors.black : Colors.white,
             ),
           ),
         ),
