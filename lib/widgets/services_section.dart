@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import '../screens/project_listing_screen.dart';
+import '../bloc/services/services_bloc.dart';
+import '../bloc/services/services_event.dart';
+import '../bloc/services/services_state.dart';
+import '../data/comprehensive_projects_database.dart';
 
 class ServicesSection extends StatefulWidget {
   const ServicesSection({super.key});
@@ -14,57 +19,102 @@ class ServicesSection extends StatefulWidget {
 
 class _ServicesSectionState extends State<ServicesSection>
     with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  bool _isVisible = false;
 
   final List<ServiceItem> services = [
     ServiceItem(
       icon: FontAwesomeIcons.globe,
       title: 'Web Application Development',
-      description: 'Modern, responsive web applications built with cutting-edge technologies.\n From simple websites to complex enterprise solutions.',
+      description: 'Modern, responsive web applications built with cutting-edge technologies. From simple websites to complex enterprise solutions.',
       features: ['Responsive Design', 'Progressive Web Apps', 'E-commerce Solutions', 'CMS Development'],
     ),
     ServiceItem(
       icon: FontAwesomeIcons.android,
       title: 'Android Application Development',
-      description: 'Native Android apps that deliver exceptional user experiences with\n optimal performance and seamless integration.',
+      description: 'Native Android apps that deliver exceptional user experiences with optimal performance and seamless integration.',
       features: ['Native Android', 'Material Design', 'Play Store Optimization', 'Performance Tuning'],
     ),
     ServiceItem(
       icon: FontAwesomeIcons.apple,
       title: 'iOS Application Development',
-      description: 'Beautiful iOS applications following Apple\'s design guidelines with \nsmooth animations and intuitive interfaces.',
+      description: 'Beautiful iOS applications following Apple\'s design guidelines with smooth animations and intuitive interfaces.',
       features: ['Native iOS', 'Human Interface Guidelines', 'App Store Optimization', 'Core Data Integration'],
     ),
     ServiceItem(
-      icon: FontAwesomeIcons.code,
-      title: 'Custom Software Solutions',
-      description: 'needs and requirements.',
-      features: ['Custom Development', 'API Integration', 'Database Design', 'Cloud Solutions'],
+      icon: FontAwesomeIcons.robot,
+      title: 'AI & Machine Learning Solutions',
+      description: 'Intelligent systems powered by artificial intelligence and machine learning algorithms for automation and insights.',
+      features: ['Computer Vision', 'Natural Language Processing', 'Predictive Analytics', 'AI Chatbots'],
+    ),
+    ServiceItem(
+      icon: FontAwesomeIcons.link,
+      title: 'Blockchain & Cryptocurrency',
+      description: 'Decentralized applications, smart contracts, and blockchain-based solutions for secure and transparent systems.',
+      features: ['Smart Contracts', 'DeFi Platforms', 'NFT Marketplaces', 'Cryptocurrency Wallets'],
+    ),
+    ServiceItem(
+      icon: FontAwesomeIcons.cube,
+      title: 'AR & VR Development',
+      description: 'Immersive augmented and virtual reality experiences for education, training, and entertainment.',
+      features: ['AR Applications', 'VR Simulations', 'Mixed Reality', '3D Modeling'],
+    ),
+    ServiceItem(
+      icon: FontAwesomeIcons.chartLine,
+      title: 'Data Science & Analytics',
+      description: 'Data-driven insights and analytics platforms to help businesses make informed decisions.',
+      features: ['Business Intelligence', 'Data Visualization', 'Predictive Modeling', 'Big Data Processing'],
+    ),
+    ServiceItem(
+      icon: FontAwesomeIcons.microchip,
+      title: 'IoT & Embedded Systems',
+      description: 'Internet of Things solutions and embedded systems for smart devices and automation.',
+      features: ['Smart Home Systems', 'Industrial IoT', 'Sensor Networks', 'Edge Computing'],
+    ),
+    ServiceItem(
+      icon: FontAwesomeIcons.shield,
+      title: 'Cybersecurity Solutions',
+      description: 'Comprehensive security solutions to protect your digital assets and ensure data privacy.',
+      features: ['Network Security', 'Threat Detection', 'Security Audits', 'Compliance Management'],
+    ),
+    ServiceItem(
+      icon: FontAwesomeIcons.cloud,
+      title: 'Cloud & DevOps',
+      description: 'Cloud infrastructure and DevOps solutions for scalable, reliable, and efficient software deployment.',
+      features: ['Cloud Migration', 'CI/CD Pipelines', 'Infrastructure as Code', 'Monitoring & Analytics'],
+    ),
+    ServiceItem(
+      icon: FontAwesomeIcons.creditCard,
+      title: 'FinTech Solutions',
+      description: 'Financial technology solutions including digital banking, payment systems, and investment platforms.',
+      features: ['Digital Banking', 'Payment Gateways', 'Robo-Advisors', 'Cryptocurrency Trading'],
+    ),
+    ServiceItem(
+      icon: FontAwesomeIcons.graduationCap,
+      title: 'EdTech Platforms',
+      description: 'Educational technology solutions for online learning, student management, and digital classrooms.',
+      features: ['Learning Management Systems', 'Virtual Classrooms', 'Educational Games', 'Student Analytics'],
     ),
   ];
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    );
+
+    // Initialize the services BLoC
+    final servicesBloc = context.read<ServicesBloc>();
+    servicesBloc.add(const LoadServices());
+    servicesBloc.initializeAnimationController(this);
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
     super.dispose();
   }
 
   void _onVisibilityChanged(VisibilityInfo info) {
-    if (info.visibleFraction > 0.3 && !_isVisible) {
-      setState(() {
-        _isVisible = true;
-      });
-      _animationController.forward();
+    if (info.visibleFraction > 0.3) {
+      context.read<ServicesBloc>().add(
+        const ServicesVisibilityChanged(true),
+      );
     }
   }
 
@@ -105,10 +155,15 @@ class _ServicesSectionState extends State<ServicesSection>
     final isMobile = ResponsiveBreakpoints.of(context).isMobile;
     final isTablet = ResponsiveBreakpoints.of(context).isTablet;
 
-    return VisibilityDetector(
-      key: const Key('services-section'),
-      onVisibilityChanged: _onVisibilityChanged,
-      child: Container(
+    return BlocBuilder<ServicesBloc, ServicesState>(
+      builder: (context, state) {
+        final servicesBloc = context.read<ServicesBloc>();
+        final animationController = servicesBloc.animationController;
+
+        return VisibilityDetector(
+          key: const Key('services-section'),
+          onVisibilityChanged: _onVisibilityChanged,
+          child: Container(
         padding: EdgeInsets.symmetric(
           horizontal: isMobile ? 16 : (isTablet ? 32 : 64),
           vertical: isMobile ? 40 : (isTablet ? 60 : 80),
@@ -118,12 +173,12 @@ class _ServicesSectionState extends State<ServicesSection>
           children: [
             // Section Header
             AnimatedBuilder(
-              animation: _animationController,
+              animation: animationController,
               builder: (context, child) {
                 return Transform.translate(
-                  offset: Offset(0, 50 * (1 - _animationController.value)),
+                  offset: Offset(0, 50 * (1 - animationController.value)),
                   child: Opacity(
-                    opacity: _animationController.value,
+                    opacity: animationController.value,
                     child: Column(
                       children: [
                         Text(
@@ -231,6 +286,8 @@ class _ServicesSectionState extends State<ServicesSection>
           ],
         ),
       ),
+        );
+      },
     );
   }
 
@@ -238,7 +295,6 @@ class _ServicesSectionState extends State<ServicesSection>
     // Responsive sizing based on screen width
     bool isMobile = screenWidth < 600;
     bool isTablet = screenWidth >= 600 && screenWidth < 1024;
-    bool isDesktop = screenWidth >= 1024;
     return GestureDetector(
       onTap: () => _navigateToProjectListing(service),
       child: AnimatedContainer(

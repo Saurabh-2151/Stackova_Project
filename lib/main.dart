@@ -6,6 +6,12 @@ import 'screens/home_screen.dart';
 import 'bloc/navigation/navigation_bloc.dart';
 import 'bloc/hero/hero_bloc.dart';
 import 'bloc/hero/hero_event.dart';
+import 'bloc/visibility/visibility_bloc.dart';
+import 'bloc/services/services_bloc.dart';
+import 'bloc/portfolio/portfolio_bloc.dart';
+import 'bloc/contact/contact_bloc.dart';
+import 'bloc/project_card/project_card_bloc.dart';
+import 'bloc/project_listing/project_listing_bloc.dart';
 
 void main() {
   runApp(const StackovaApp());
@@ -23,6 +29,24 @@ class StackovaApp extends StatelessWidget {
         ),
         BlocProvider<HeroBloc>(
           create: (context) => HeroBloc()..add(const InitializeHero()),
+        ),
+        BlocProvider<VisibilityBloc>(
+          create: (context) => VisibilityBloc(),
+        ),
+        BlocProvider<ServicesBloc>(
+          create: (context) => ServicesBloc(),
+        ),
+        BlocProvider<PortfolioBloc>(
+          create: (context) => PortfolioBloc(),
+        ),
+        BlocProvider<ContactBloc>(
+          create: (context) => ContactBloc(),
+        ),
+        BlocProvider<ProjectCardBloc>(
+          create: (context) => ProjectCardBloc(),
+        ),
+        BlocProvider<ProjectListingBloc>(
+          create: (context) => ProjectListingBloc(),
         ),
       ],
       child: MaterialApp(

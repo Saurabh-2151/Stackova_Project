@@ -1,4 +1,6 @@
 import '../models/project.dart';
+import 'comprehensive_projects_database.dart';
+import 'expanded_projects_database.dart';
 
 class ProjectsData {
   static List<Project> getAllProjects() {
@@ -292,5 +294,176 @@ class ProjectsData {
 
   static List<String> getAllCategories() {
     return ['All Software Projects', 'Web App', 'Android App', 'iOS App'];
+  }
+
+  // Get comprehensive project database
+  static List<ProjectCategory> getComprehensiveCategories() {
+    return ComprehensiveProjectsDatabase.getAllProjectCategories();
+  }
+
+  // Generate Project objects from comprehensive database
+  static List<Project> getExpandedProjects() {
+    final expandedProjects = <Project>[];
+    final categories = ComprehensiveProjectsDatabase.getAllProjectCategories();
+
+    for (final category in categories) {
+      for (int i = 0; i < category.projects.length; i++) {
+        final projectTitle = category.projects[i];
+        final projectId = projectTitle.toLowerCase()
+            .replaceAll(RegExp(r'[^a-z0-9\s]'), '')
+            .replaceAll(' ', '-');
+
+        // Map category names to existing categories
+        String mappedCategory;
+        if (category.name.contains('Web') || category.name.contains('SaaS')) {
+          mappedCategory = 'Web App';
+        } else if (category.name.contains('Android')) {
+          mappedCategory = 'Android App';
+        } else if (category.name.contains('iOS')) {
+          mappedCategory = 'iOS App';
+        } else {
+          mappedCategory = 'Web App'; // Default to Web App for other categories
+        }
+
+        // Generate technologies based on category
+        List<String> technologies = _getTechnologiesForCategory(category.name);
+
+        // Generate features based on project title
+        List<String> features = _generateFeaturesForProject(projectTitle);
+
+        expandedProjects.add(Project(
+          id: projectId,
+          title: projectTitle,
+          description: _generateDescription(projectTitle, category.name),
+          detailedDescription: _generateDetailedDescription(projectTitle, category.description),
+          technologies: technologies,
+          category: mappedCategory,
+          features: features,
+          screenshots: _generateScreenshots(projectId),
+          duration: _estimateDuration(category.name),
+          teamSize: _estimateTeamSize(category.name),
+          clientName: 'Enterprise Client',
+        ));
+      }
+    }
+
+    return expandedProjects;
+  }
+
+  // Get all projects including original and expanded
+  static List<Project> getAllProjectsExpanded() {
+    final originalProjects = getAllProjects();
+    final expandedProjects = getExpandedProjects();
+    return [...originalProjects, ...expandedProjects];
+  }
+
+  // Helper method to get technologies for category
+  static List<String> _getTechnologiesForCategory(String categoryName) {
+    switch (categoryName.toLowerCase()) {
+      case 'blockchain & cryptocurrency':
+        return ['Solidity', 'Web3.js', 'React', 'Node.js'];
+      case 'ai & machine learning':
+        return ['Python', 'TensorFlow', 'PyTorch', 'FastAPI'];
+      case 'web applications':
+        return ['React', 'Node.js', 'MongoDB', 'Express'];
+      case 'android applications':
+        return ['Kotlin', 'Android SDK', 'Firebase', 'Retrofit'];
+      case 'ios applications':
+        return ['Swift', 'SwiftUI', 'Core Data', 'CloudKit'];
+      case 'ar & vr applications':
+        return ['Unity', 'ARKit', 'ARCore', 'C#'];
+      case 'data science & analytics':
+        return ['Python', 'Pandas', 'Matplotlib', 'Jupyter'];
+      case 'iot & embedded systems':
+        return ['Arduino', 'Raspberry Pi', 'C++', 'MQTT'];
+      case 'cybersecurity & information security':
+        return ['Python', 'Kali Linux', 'Wireshark', 'OpenSSL'];
+      case 'cloud & devops':
+        return ['AWS', 'Docker', 'Kubernetes', 'Terraform'];
+      case 'fintech & digital banking':
+        return ['React', 'Node.js', 'PostgreSQL', 'Stripe API'];
+      case 'edtech & e-learning':
+        return ['React', 'Node.js', 'MongoDB', 'WebRTC'];
+      case 'healthtech & medical':
+        return ['React', 'Node.js', 'FHIR', 'HL7'];
+      default:
+        return ['React', 'Node.js', 'MongoDB', 'Express'];
+    }
+  }
+
+  // Helper method to generate description
+  static String _generateDescription(String title, String category) {
+    return 'Advanced $category solution: $title with modern architecture and scalable design.';
+  }
+
+  // Helper method to generate detailed description
+  static String _generateDetailedDescription(String title, String categoryDescription) {
+    return 'A comprehensive $title system built with cutting-edge technology. $categoryDescription This solution provides enterprise-grade functionality with modern user experience and robust security features.';
+  }
+
+  // Helper method to generate features
+  static List<String> _generateFeaturesForProject(String title) {
+    final baseFeatures = [
+      'Modern responsive design',
+      'Real-time data synchronization',
+      'Advanced security features',
+      'Scalable architecture',
+      'User-friendly interface',
+      'Analytics and reporting',
+      'Mobile-responsive design',
+      'Cloud integration',
+    ];
+
+    // Add specific features based on project type
+    if (title.toLowerCase().contains('ai') || title.toLowerCase().contains('machine learning')) {
+      baseFeatures.addAll(['AI-powered insights', 'Machine learning algorithms', 'Predictive analytics']);
+    }
+    if (title.toLowerCase().contains('blockchain')) {
+      baseFeatures.addAll(['Smart contracts', 'Decentralized architecture', 'Cryptocurrency integration']);
+    }
+    if (title.toLowerCase().contains('mobile') || title.toLowerCase().contains('app')) {
+      baseFeatures.addAll(['Push notifications', 'Offline functionality', 'Biometric authentication']);
+    }
+
+    return baseFeatures.take(8).toList();
+  }
+
+  // Helper method to generate screenshots
+  static List<String> _generateScreenshots(String projectId) {
+    return [
+      'assets/projects/$projectId/dashboard.png',
+      'assets/projects/$projectId/features.png',
+      'assets/projects/$projectId/mobile.png',
+    ];
+  }
+
+  // Helper method to estimate duration
+  static String _estimateDuration(String category) {
+    switch (category.toLowerCase()) {
+      case 'blockchain & cryptocurrency':
+      case 'ai & machine learning':
+        return '4-6 months';
+      case 'ar & vr applications':
+      case 'iot & embedded systems':
+        return '3-5 months';
+      case 'cybersecurity & information security':
+        return '2-4 months';
+      default:
+        return '2-3 months';
+    }
+  }
+
+  // Helper method to estimate team size
+  static String _estimateTeamSize(String category) {
+    switch (category.toLowerCase()) {
+      case 'blockchain & cryptocurrency':
+      case 'ai & machine learning':
+        return '5-7 developers';
+      case 'ar & vr applications':
+      case 'iot & embedded systems':
+        return '4-6 developers';
+      default:
+        return '3-5 developers';
+    }
   }
 }

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import '../bloc/contact/contact_bloc.dart';
+import '../bloc/contact/contact_event.dart';
+import '../bloc/contact/contact_state.dart';
 
 class ContactSection extends StatefulWidget {
   const ContactSection({super.key});
@@ -13,11 +17,6 @@ class ContactSection extends StatefulWidget {
 
 class _ContactSectionState extends State<ContactSection>
     with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-  bool _isVisible = false;
-
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -26,30 +25,15 @@ class _ContactSectionState extends State<ContactSection>
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
-      ),
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
-    ));
+    // Initialize the contact BLoC
+    final contactBloc = context.read<ContactBloc>();
+    contactBloc.add(const InitializeContact());
+    contactBloc.initializeAnimationController(this);
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _messageController.dispose();
@@ -57,11 +41,10 @@ class _ContactSectionState extends State<ContactSection>
   }
 
   void _onVisibilityChanged(VisibilityInfo info) {
-    if (info.visibleFraction > 0.3 && !_isVisible) {
-      setState(() {
-        _isVisible = true;
-      });
-      _animationController.forward();
+    if (info.visibleFraction > 0.3) {
+      context.read<ContactBloc>().add(
+        const ContactVisibilityChanged(true),
+      );
     }
   }
 
@@ -90,10 +73,31 @@ class _ContactSectionState extends State<ContactSection>
     final isMobile = ResponsiveBreakpoints.of(context).isMobile;
     final isTablet = ResponsiveBreakpoints.of(context).isTablet;
 
-    return VisibilityDetector(
-      key: const Key('contact-section'),
-      onVisibilityChanged: _onVisibilityChanged,
-      child: Container(
+    return BlocBuilder<ContactBloc, ContactState>(
+      builder: (context, state) {
+        final contactBloc = context.read<ContactBloc>();
+        final animationController = contactBloc.animationController;
+
+        // Create animations
+        final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(
+            parent: animationController,
+            curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+          ),
+        );
+
+        final slideAnimation = Tween<Offset>(
+          begin: const Offset(0, 0.3),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(
+          parent: animationController,
+          curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
+        ));
+
+        return VisibilityDetector(
+          key: const Key('contact-section'),
+          onVisibilityChanged: _onVisibilityChanged,
+          child: Container(
         padding: EdgeInsets.symmetric(
           horizontal: isMobile ? 20 : (isTablet ? 40 : 80),
           vertical: isMobile ? 60 : 100,
@@ -112,12 +116,12 @@ class _ContactSectionState extends State<ContactSection>
           children: [
             // Section Header
             AnimatedBuilder(
-              animation: _animationController,
+              animation: animationController,
               builder: (context, child) {
                 return FadeTransition(
-                  opacity: _fadeAnimation,
+                  opacity: fadeAnimation,
                   child: SlideTransition(
-                    position: _slideAnimation,
+                    position: slideAnimation,
                     child: Column(
                       children: [
                         Text(
@@ -157,9 +161,9 @@ class _ContactSectionState extends State<ContactSection>
             // Contact Content
             if (isMobile || isTablet) ...[
               // Mobile/Tablet Layout
-              _buildContactInfo(isMobile, isTablet),
+              _buildContactInfo(isMobile, isTablet, animationController, fadeAnimation, slideAnimation),
               const SizedBox(height: 40),
-              _buildContactForm(isMobile, isTablet),
+              _buildContactForm(isMobile, isTablet, animationController, fadeAnimation, slideAnimation),
             ] else ...[
               // Desktop Layout
               Row(
@@ -167,12 +171,12 @@ class _ContactSectionState extends State<ContactSection>
                 children: [
                   Expanded(
                     flex: 1,
-                    child: _buildContactInfo(isMobile, isTablet),
+                    child: _buildContactInfo(isMobile, isTablet, animationController, fadeAnimation, slideAnimation),
                   ),
                   const SizedBox(width: 60),
                   Expanded(
                     flex: 1,
-                    child: _buildContactForm(isMobile, isTablet),
+                    child: _buildContactForm(isMobile, isTablet, animationController, fadeAnimation, slideAnimation),
                   ),
                 ],
               ),
@@ -180,17 +184,19 @@ class _ContactSectionState extends State<ContactSection>
           ],
         ),
       ),
+        );
+      },
     );
   }
 
-  Widget _buildContactInfo(bool isMobile, bool isTablet) {
+  Widget _buildContactInfo(bool isMobile, bool isTablet, AnimationController animationController, Animation<double> fadeAnimation, Animation<Offset> slideAnimation) {
     return AnimatedBuilder(
-      animation: _animationController,
+      animation: animationController,
       builder: (context, child) {
         return FadeTransition(
-          opacity: _fadeAnimation,
+          opacity: fadeAnimation,
           child: SlideTransition(
-            position: _slideAnimation,
+            position: slideAnimation,
             child: Column(
               crossAxisAlignment: isMobile || isTablet 
                   ? CrossAxisAlignment.center 
@@ -336,14 +342,14 @@ class _ContactSectionState extends State<ContactSection>
     );
   }
 
-  Widget _buildContactForm(bool isMobile, bool isTablet) {
+  Widget _buildContactForm(bool isMobile, bool isTablet, AnimationController animationController, Animation<double> fadeAnimation, Animation<Offset> slideAnimation) {
     return AnimatedBuilder(
-      animation: _animationController,
+      animation: animationController,
       builder: (context, child) {
         return FadeTransition(
-          opacity: _fadeAnimation,
+          opacity: fadeAnimation,
           child: SlideTransition(
-            position: _slideAnimation,
+            position: slideAnimation,
             child: Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(

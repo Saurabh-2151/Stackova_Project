@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import '../models/project.dart';
 import '../data/projects_data.dart';
 import '../widgets/navigation_bar.dart';
 import '../widgets/project_card.dart';
+import '../bloc/project_listing/project_listing_bloc.dart';
+import '../bloc/project_listing/project_listing_event.dart';
+import '../bloc/project_listing/project_listing_state.dart';
 
 class ProjectListingScreen extends StatefulWidget {
   final String projectType;
@@ -26,16 +30,15 @@ class ProjectListingScreen extends StatefulWidget {
 
 class _ProjectListingScreenState extends State<ProjectListingScreen> {
   final ScrollController _scrollController = ScrollController();
-  bool _isScrolled = false;
-  String _selectedCategory = 'all';
-  List<Project> _filteredProjects = [];
-  List<Project> _allProjects = [];
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _loadProjects();
+
+    // Initialize the project listing BLoC
+    final categoryId = _getCategoryId(widget.projectType);
+    context.read<ProjectListingBloc>().add(InitializeProjectListing(categoryId));
   }
 
   @override
@@ -46,52 +49,28 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.offset > 100 && !_isScrolled) {
-      setState(() {
-        _isScrolled = true;
-      });
-    } else if (_scrollController.offset <= 100 && _isScrolled) {
-      setState(() {
-        _isScrolled = false;
-      });
-    }
+    context.read<ProjectListingBloc>().add(
+      ScrollPositionChanged(_scrollController.offset),
+    );
   }
 
-  void _loadProjects() {
-    if (widget.projectType == 'all') {
-      _allProjects = ProjectsData.getAllProjects();
-    } else {
-      // Map project types to categories
-      String category = '';
-      switch (widget.projectType) {
-        case 'web':
-          category = 'Web App';
-          break;
-        case 'android':
-          category = 'Android App';
-          break;
-        case 'ios':
-          category = 'iOS App';
-          break;
-        default:
-          category = 'Web App';
-      }
-      _allProjects = ProjectsData.getProjectsByCategory(category);
+  String _getCategoryId(String projectType) {
+    switch (projectType) {
+      case 'web':
+        return 'web';
+      case 'android':
+        return 'android';
+      case 'ios':
+        return 'ios';
+      default:
+        return 'all';
     }
-    _filteredProjects = _allProjects;
   }
 
   void _filterByCategory(String categoryId) {
-    setState(() {
-      _selectedCategory = categoryId;
-      if (categoryId == 'all') {
-        _filteredProjects = _allProjects;
-      } else {
-        _filteredProjects = _allProjects
-            .where((project) => project.category == categoryId)
-            .toList();
-      }
-    });
+    context.read<ProjectListingBloc>().add(
+      CategoryFilterChanged(categoryId),
+    );
   }
 
   @override
@@ -99,43 +78,53 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
     final isMobile = ResponsiveBreakpoints.of(context).isMobile;
     final isTablet = ResponsiveBreakpoints.of(context).isTablet;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              controller: _scrollController,
-              physics: const ClampingScrollPhysics(), // Prevent overscroll
-            child: Column(
+    return BlocBuilder<ProjectListingBloc, ProjectListingState>(
+      builder: (context, state) {
+        if (state is! ProjectListingLoaded) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: Stack(
               children: [
-                // Hero Section
-                _buildHeroSection(isMobile, isTablet),
-                
-                // Category Filters (only for "All Software Projects")
-                if (widget.projectType == 'all') ...[
-                  _buildCategoryFilters(isMobile, isTablet),
-                  const SizedBox(height: 40),
-                ],
-                
-                // Projects List
-                _buildProjectsList(isMobile, isTablet),
-                
-                const SizedBox(height: 80),
+                SingleChildScrollView(
+                  controller: _scrollController,
+                  physics: const ClampingScrollPhysics(), // Prevent overscroll
+                child: Column(
+                  children: [
+                    // Hero Section
+                    _buildHeroSection(isMobile, isTablet, state),
+
+                    // Category Filters (only for "All Software Projects")
+                    if (widget.projectType == 'all') ...[
+                      _buildCategoryFilters(isMobile, isTablet, state),
+                      const SizedBox(height: 40),
+                    ],
+
+                    // Projects List
+                    _buildProjectsList(isMobile, isTablet, state),
+
+                    const SizedBox(height: 80),
+                  ],
+                ),
+                ),
+                CustomNavigationBar(
+                  isScrolled: state.isScrolled,
+                  scrollController: _scrollController,
+                ),
               ],
+              ),
             ),
-          ),
-          CustomNavigationBar(
-            isScrolled: _isScrolled,
-            scrollController: _scrollController,
-          ),
-        ],
-        ),
-      ),
-    );
+          );
+        },
+      );
   }
 
-  Widget _buildHeroSection(bool isMobile, bool isTablet) {
+  Widget _buildHeroSection(bool isMobile, bool isTablet, ProjectListingLoaded state) {
     return Container(
       height: isMobile ? 300 : 400,
       decoration: BoxDecoration(
@@ -210,7 +199,7 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
             
             // Project Count
             Text(
-              '${_allProjects.length} Projects Available',
+              '${state.allProjects.length} Projects Available',
               style: GoogleFonts.inter(
                 fontSize: isMobile ? 16 : 18,
                 fontWeight: FontWeight.w400,
@@ -224,7 +213,7 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
     );
   }
 
-  Widget _buildCategoryFilters(bool isMobile, bool isTablet) {
+  Widget _buildCategoryFilters(bool isMobile, bool isTablet, ProjectListingLoaded state) {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 20 : (isTablet ? 40 : 80),
@@ -250,10 +239,10 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
             runSpacing: 12,
             alignment: WrapAlignment.center,
             children: [
-              _buildCategoryChip('all', 'All Categories', isMobile),
-              ...ProjectsData.getAllCategories().skip(1).map((category) {
-                return _buildCategoryChip(category.toLowerCase().replaceAll(' ', '_'), category, isMobile);
-              }),
+              _buildCategoryChip('all', 'All Categories', isMobile, state),
+              _buildCategoryChip('web', 'Web Apps', isMobile, state),
+              _buildCategoryChip('android', 'Android Apps', isMobile, state),
+              _buildCategoryChip('ios', 'iOS Apps', isMobile, state),
             ],
           ),
         ],
@@ -261,8 +250,8 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
     );
   }
 
-  Widget _buildCategoryChip(String categoryId, String name, bool isMobile) {
-    final isSelected = _selectedCategory == categoryId;
+  Widget _buildCategoryChip(String categoryId, String name, bool isMobile, ProjectListingLoaded state) {
+    final isSelected = state.selectedCategory == categoryId;
     
     return GestureDetector(
       onTap: () => _filterByCategory(categoryId),
@@ -305,7 +294,7 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
     );
   }
 
-  Widget _buildProjectsList(bool isMobile, bool isTablet) {
+  Widget _buildProjectsList(bool isMobile, bool isTablet, ProjectListingLoaded state) {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 20 : (isTablet ? 40 : 80),
@@ -319,14 +308,14 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Projects (${_filteredProjects.length})',
+                'Projects (${state.filteredProjects.length})',
                 style: GoogleFonts.inter(
                   fontSize: isMobile ? 20 : 24,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF1E293B),
                 ),
               ),
-              if (_selectedCategory != 'all')
+              if (state.selectedCategory != 'all')
                 GestureDetector(
                   onTap: () => _filterByCategory('all'),
                   child: Text(
@@ -345,7 +334,7 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
           const SizedBox(height: 24),
           
           // Projects Grid
-          if (_filteredProjects.isEmpty)
+          if (state.filteredProjects.isEmpty)
             _buildEmptyState()
           else
             LayoutBuilder(
@@ -382,10 +371,10 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
                     mainAxisSpacing: spacing,
                     childAspectRatio: childAspectRatio,
                   ),
-                  itemCount: _filteredProjects.length,
+                  itemCount: state.filteredProjects.length,
                   itemBuilder: (context, index) {
                     return ProjectCard(
-                      project: _filteredProjects[index],
+                      project: state.filteredProjects[index],
                       isCompact: constraints.maxWidth < 600,
                     );
                   },

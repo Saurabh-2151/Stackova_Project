@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import '../bloc/visibility/visibility_bloc.dart';
+import '../bloc/visibility/visibility_event.dart';
+import '../bloc/visibility/visibility_state.dart';
 
 class TechnologiesSection extends StatefulWidget {
   const TechnologiesSection({super.key});
@@ -13,9 +17,7 @@ class TechnologiesSection extends StatefulWidget {
 
 class _TechnologiesSectionState extends State<TechnologiesSection>
     with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late List<Animation<double>> _techAnimations;
-  bool _isVisible = false;
+  static const String sectionId = 'technologies';
 
   final List<TechCategory> techCategories = [
     TechCategory(
@@ -59,34 +61,30 @@ class _TechnologiesSectionState extends State<TechnologiesSection>
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
-      vsync: this,
-    );
 
-    _techAnimations = List.generate(
-      techCategories.length,
-      (index) => Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-          parent: _animationController,
-          curve: Curves.easeOutCubic,
-        ),
-      ),
+    // Initialize the section in visibility BLoC
+    final visibilityBloc = context.read<VisibilityBloc>();
+    visibilityBloc.add(const InitializeSection(sectionId));
+    visibilityBloc.initializeAnimationController(
+      sectionId,
+      this,
+      duration: const Duration(milliseconds: 2000),
     );
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
     super.dispose();
   }
 
   void _onVisibilityChanged(VisibilityInfo info) {
-    if (info.visibleFraction > 0.3 && !_isVisible) {
-      setState(() {
-        _isVisible = true;
-      });
-      _animationController.forward();
+    if (info.visibleFraction > 0.3) {
+      context.read<VisibilityBloc>().add(
+        const SectionVisibilityChanged(
+          sectionId: sectionId,
+          isVisible: true,
+        ),
+      );
     }
   }
 
@@ -95,10 +93,28 @@ class _TechnologiesSectionState extends State<TechnologiesSection>
     final isMobile = ResponsiveBreakpoints.of(context).isMobile;
     final isTablet = ResponsiveBreakpoints.of(context).isTablet;
 
-    return VisibilityDetector(
-      key: const Key('technologies-section'),
-      onVisibilityChanged: _onVisibilityChanged,
-      child: Container(
+    return BlocBuilder<VisibilityBloc, VisibilityState>(
+      builder: (context, state) {
+        final visibilityBloc = context.read<VisibilityBloc>();
+        final animationController = visibilityBloc.getAnimationController(sectionId);
+
+        // Create tech animations
+        final techAnimations = animationController != null
+            ? List.generate(
+                techCategories.length,
+                (index) => Tween<double>(begin: 0.0, end: 1.0).animate(
+                  CurvedAnimation(
+                    parent: animationController,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
+              )
+            : <Animation<double>>[];
+
+        return VisibilityDetector(
+          key: const Key('technologies-section'),
+          onVisibilityChanged: _onVisibilityChanged,
+          child: Container(
         padding: EdgeInsets.symmetric(
           horizontal: isMobile ? 20 : (isTablet ? 40 : 80),
           vertical: isMobile ? 60 : 100,
@@ -117,12 +133,13 @@ class _TechnologiesSectionState extends State<TechnologiesSection>
           children: [
             // Section Header
             AnimatedBuilder(
-              animation: _animationController,
+              animation: animationController ?? const AlwaysStoppedAnimation(1.0),
               builder: (context, child) {
+                final value = animationController?.value ?? 1.0;
                 return Transform.translate(
-                  offset: Offset(0, 50 * (1 - _animationController.value)),
+                  offset: Offset(0, 50 * (1 - value)),
                   child: Opacity(
-                    opacity: _animationController.value,
+                    opacity: value,
                     child: Column(
                       children: [
                         Text(
@@ -171,16 +188,20 @@ class _TechnologiesSectionState extends State<TechnologiesSection>
               ),
               itemCount: techCategories.length,
               itemBuilder: (context, index) {
+                final animation = techAnimations.isNotEmpty && index < techAnimations.length
+                    ? techAnimations[index]
+                    : const AlwaysStoppedAnimation(1.0);
+
                 return AnimatedBuilder(
-                  animation: _techAnimations[index],
+                  animation: animation,
                   builder: (context, child) {
                     return Transform.translate(
                       offset: Offset(
                         0,
-                        50 * (1 - _techAnimations[index].value),
+                        50 * (1 - animation.value),
                       ),
                       child: Opacity(
-                        opacity: _techAnimations[index].value,
+                        opacity: animation.value,
                         child: _buildTechCategoryCard(
                           techCategories[index],
                           isMobile,
@@ -194,6 +215,8 @@ class _TechnologiesSectionState extends State<TechnologiesSection>
           ],
         ),
       ),
+        );
+      },
     );
   }
 
@@ -245,7 +268,7 @@ class _TechnologiesSectionState extends State<TechnologiesSection>
   Widget _buildTechItem(TechItem tech) {
     return TweenAnimationBuilder<double>(
       duration: const Duration(milliseconds: 600),
-      tween: Tween(begin: 0.0, end: _isVisible ? 1.0 : 0.0),
+      tween: Tween(begin: 0.0, end: 1.0),
       builder: (context, value, child) {
         return Transform.scale(
           scale: 0.8 + (0.2 * value),

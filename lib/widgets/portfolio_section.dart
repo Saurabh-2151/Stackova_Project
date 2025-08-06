@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import '../bloc/portfolio/portfolio_bloc.dart';
+import '../bloc/portfolio/portfolio_event.dart';
+import '../bloc/portfolio/portfolio_state.dart';
 
 class PortfolioSection extends StatefulWidget {
   const PortfolioSection({super.key});
@@ -12,12 +16,6 @@ class PortfolioSection extends StatefulWidget {
 
 class _PortfolioSectionState extends State<PortfolioSection>
     with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late List<Animation<double>> _projectAnimations;
-  bool _isVisible = false;
-  String _selectedCategory = 'All';
-
-  final List<String> categories = ['All', 'Web Apps', 'Mobile Apps', 'E-commerce'];
 
   final List<ProjectItem> projects = [
     ProjectItem(
@@ -67,42 +65,31 @@ class _PortfolioSectionState extends State<PortfolioSection>
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
 
-    _projectAnimations = List.generate(
-      projects.length,
-      (index) => Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-          parent: _animationController,
-          curve: Curves.easeOutCubic,
-        ),
-      ),
-    );
+    // Initialize the portfolio BLoC
+    final portfolioBloc = context.read<PortfolioBloc>();
+    portfolioBloc.add(const LoadPortfolio());
+    portfolioBloc.initializeAnimationController(this);
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
     super.dispose();
   }
 
   void _onVisibilityChanged(VisibilityInfo info) {
-    if (info.visibleFraction > 0.3 && !_isVisible) {
-      setState(() {
-        _isVisible = true;
-      });
-      _animationController.forward();
+    if (info.visibleFraction > 0.3) {
+      context.read<PortfolioBloc>().add(
+        const PortfolioVisibilityChanged(true),
+      );
     }
   }
 
-  List<ProjectItem> get filteredProjects {
-    if (_selectedCategory == 'All') {
+  List<ProjectItem> getFilteredProjects(String selectedCategory) {
+    if (selectedCategory == 'All') {
       return projects;
     }
-    return projects.where((project) => project.category == _selectedCategory).toList();
+    return projects.where((project) => project.category == selectedCategory).toList();
   }
 
   @override
@@ -110,10 +97,21 @@ class _PortfolioSectionState extends State<PortfolioSection>
     final isMobile = ResponsiveBreakpoints.of(context).isMobile;
     final isTablet = ResponsiveBreakpoints.of(context).isTablet;
 
-    return VisibilityDetector(
-      key: const Key('portfolio-section'),
-      onVisibilityChanged: _onVisibilityChanged,
-      child: Container(
+    return BlocBuilder<PortfolioBloc, PortfolioState>(
+      builder: (context, state) {
+        final portfolioBloc = context.read<PortfolioBloc>();
+        final animationController = portfolioBloc.animationController;
+
+        if (state is! PortfolioLoaded) {
+          return const SizedBox.shrink();
+        }
+
+        final filteredProjects = getFilteredProjects(state.selectedCategory);
+
+        return VisibilityDetector(
+          key: const Key('portfolio-section'),
+          onVisibilityChanged: _onVisibilityChanged,
+          child: Container(
         padding: EdgeInsets.symmetric(
           horizontal: isMobile ? 20 : (isTablet ? 40 : 80),
           vertical: isMobile ? 60 : 100,
@@ -123,12 +121,12 @@ class _PortfolioSectionState extends State<PortfolioSection>
           children: [
             // Section Header
             AnimatedBuilder(
-              animation: _animationController,
+              animation: animationController,
               builder: (context, child) {
                 return Transform.translate(
-                  offset: Offset(0, 50 * (1 - _animationController.value)),
+                  offset: Offset(0, 50 * (1 - animationController.value)),
                   child: Opacity(
-                    opacity: _animationController.value,
+                    opacity: animationController.value,
                     child: Column(
                       children: [
                         Text(
@@ -167,21 +165,21 @@ class _PortfolioSectionState extends State<PortfolioSection>
 
             // Category Filter
             AnimatedBuilder(
-              animation: _animationController,
+              animation: animationController,
               builder: (context, child) {
                 return Opacity(
-                  opacity: _animationController.value,
+                  opacity: animationController.value,
                   child: Wrap(
                     spacing: 16,
                     runSpacing: 16,
                     alignment: WrapAlignment.center,
-                    children: categories.map((category) {
-                      final isSelected = _selectedCategory == category;
+                    children: state.categories.map((category) {
+                      final isSelected = state.selectedCategory == category;
                       return GestureDetector(
                         onTap: () {
-                          setState(() {
-                            _selectedCategory = category;
-                          });
+                          context.read<PortfolioBloc>().add(
+                            SelectCategory(category),
+                          );
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
@@ -223,7 +221,7 @@ class _PortfolioSectionState extends State<PortfolioSection>
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 500),
               child: GridView.builder(
-                key: ValueKey(_selectedCategory),
+                key: ValueKey(state.selectedCategory),
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -234,17 +232,23 @@ class _PortfolioSectionState extends State<PortfolioSection>
                 ),
                 itemCount: filteredProjects.length,
                 itemBuilder: (context, index) {
-                  final projectIndex = projects.indexOf(filteredProjects[index]);
+                  final projectAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                    CurvedAnimation(
+                      parent: animationController,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  );
+
                   return AnimatedBuilder(
-                    animation: _projectAnimations[projectIndex],
+                    animation: projectAnimation,
                     builder: (context, child) {
                       return Transform.translate(
                         offset: Offset(
                           0,
-                          50 * (1 - _projectAnimations[projectIndex].value),
+                          50 * (1 - projectAnimation.value),
                         ),
                         child: Opacity(
-                          opacity: _projectAnimations[projectIndex].value,
+                          opacity: projectAnimation.value,
                           child: _buildProjectCard(
                             filteredProjects[index],
                             isMobile,
@@ -259,6 +263,8 @@ class _PortfolioSectionState extends State<PortfolioSection>
           ],
         ),
       ),
+        );
+      },
     );
   }
 

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import '../models/project.dart';
 import '../screens/project_details_screen.dart';
+import '../bloc/project_card/project_card_bloc.dart';
+import '../bloc/project_card/project_card_event.dart';
+import '../bloc/project_card/project_card_state.dart';
 
 class ProjectCard extends StatefulWidget {
   final Project project;
@@ -20,39 +24,19 @@ class ProjectCard extends StatefulWidget {
 
 class _ProjectCardState extends State<ProjectCard>
     with SingleTickerProviderStateMixin {
-  bool _isHovered = false;
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _elevationAnimation;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
 
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.02,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-
-    _elevationAnimation = Tween<double>(
-      begin: 2.0,
-      end: 8.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    // Initialize the project card in BLoC
+    final projectCardBloc = context.read<ProjectCardBloc>();
+    projectCardBloc.add(InitializeProjectCard(widget.project.id));
+    projectCardBloc.initializeAnimationController(widget.project.id, this);
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
     super.dispose();
   }
 
@@ -65,26 +49,49 @@ class _ProjectCardState extends State<ProjectCard>
   }
 
   void _onHover(bool isHovered) {
-    setState(() {
-      _isHovered = isHovered;
-    });
-
-    if (isHovered) {
-      _animationController.forward();
-    } else {
-      _animationController.reverse();
-    }
+    context.read<ProjectCardBloc>().add(
+      ProjectCardHoverChanged(
+        projectId: widget.project.id,
+        isHovered: isHovered,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveBreakpoints.of(context).isMobile;
 
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
+    return BlocBuilder<ProjectCardBloc, ProjectCardState>(
+      builder: (context, state) {
+        final projectCardBloc = context.read<ProjectCardBloc>();
+        final animationController = projectCardBloc.getAnimationController(widget.project.id);
+        final isHovered = state is ProjectCardLoaded ? state.isProjectHovered(widget.project.id) : false;
+
+        if (animationController == null) {
+          return _buildStaticCard(isMobile, isHovered);
+        }
+
+        final scaleAnimation = Tween<double>(
+          begin: 1.0,
+          end: 1.02,
+        ).animate(CurvedAnimation(
+          parent: animationController,
+          curve: Curves.easeInOut,
+        ));
+
+        final elevationAnimation = Tween<double>(
+          begin: 2.0,
+          end: 8.0,
+        ).animate(CurvedAnimation(
+          parent: animationController,
+          curve: Curves.easeInOut,
+        ));
+
+        return AnimatedBuilder(
+          animation: animationController,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: scaleAnimation.value,
           child: MouseRegion(
             onEnter: (_) => _onHover(true),
             onExit: (_) => _onHover(false),
@@ -94,7 +101,7 @@ class _ProjectCardState extends State<ProjectCard>
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeInOut,
                 child: Card(
-                  elevation: _elevationAnimation.value,
+                  elevation: elevationAnimation.value,
                   shadowColor: Colors.black.withOpacity(0.1),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -103,8 +110,8 @@ class _ProjectCardState extends State<ProjectCard>
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: _isHovered 
-                            ? const Color(0xFF60A5FA).withOpacity(0.3)
+                        color: isHovered
+                            ? const Color(0xFF60A5FA).withValues(alpha: 0.3)
                             : Colors.transparent,
                         width: 2,
                       ),
@@ -161,7 +168,7 @@ class _ProjectCardState extends State<ProjectCard>
                                 ),
                               ),
                               // Click indicator
-                              if (_isHovered)
+                              if (isHovered)
                                 Positioned.fill(
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -254,7 +261,7 @@ class _ProjectCardState extends State<ProjectCard>
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: const Color(0xFF60A5FA),
                                       side: BorderSide(
-                                        color: _isHovered 
+                                        color: isHovered
                                             ? const Color(0xFF60A5FA)
                                             : Colors.grey[300]!,
                                       ),
@@ -277,7 +284,7 @@ class _ProjectCardState extends State<ProjectCard>
                                         Icon(
                                           Icons.arrow_forward,
                                           size: 16,
-                                          color: _isHovered 
+                                          color: isHovered
                                               ? const Color(0xFF60A5FA)
                                               : Colors.grey[500],
                                         ),
@@ -297,7 +304,67 @@ class _ProjectCardState extends State<ProjectCard>
             ),
           ),
         );
+          },
+        );
       },
+    );
+  }
+
+  Widget _buildStaticCard(bool isMobile, bool isHovered) {
+    return MouseRegion(
+      onEnter: (_) => _onHover(true),
+      onExit: (_) => _onHover(false),
+      child: GestureDetector(
+        onTap: _onTap,
+        child: Card(
+          elevation: isHovered ? 8.0 : 2.0,
+          shadowColor: Colors.black.withValues(alpha: 0.1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isHovered
+                    ? const Color(0xFF60A5FA).withValues(alpha: 0.3)
+                    : Colors.transparent,
+                width: 2,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Project content would go here - simplified for static version
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.project.title,
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.project.description,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
