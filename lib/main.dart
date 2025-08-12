@@ -12,6 +12,9 @@ import 'bloc/portfolio/portfolio_bloc.dart';
 import 'bloc/contact/contact_bloc.dart';
 import 'bloc/project_card/project_card_bloc.dart';
 import 'bloc/project_listing/project_listing_bloc.dart';
+import 'widgets/error_boundary.dart';
+import 'config/app_config.dart';
+import 'constants/app_constants.dart';
 
 void main() {
   runApp(const StackovaApp());
@@ -24,43 +27,29 @@ class StackovaApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<NavigationBloc>(
-          create: (context) => NavigationBloc(),
-        ),
+        BlocProvider<NavigationBloc>(create: (context) => NavigationBloc()),
         BlocProvider<HeroBloc>(
           create: (context) => HeroBloc()..add(const InitializeHero()),
         ),
-        BlocProvider<VisibilityBloc>(
-          create: (context) => VisibilityBloc(),
-        ),
-        BlocProvider<ServicesBloc>(
-          create: (context) => ServicesBloc(),
-        ),
-        BlocProvider<PortfolioBloc>(
-          create: (context) => PortfolioBloc(),
-        ),
-        BlocProvider<ContactBloc>(
-          create: (context) => ContactBloc(),
-        ),
-        BlocProvider<ProjectCardBloc>(
-          create: (context) => ProjectCardBloc(),
-        ),
+        BlocProvider<VisibilityBloc>(create: (context) => VisibilityBloc()),
+        BlocProvider<ServicesBloc>(create: (context) => ServicesBloc()),
+        BlocProvider<PortfolioBloc>(create: (context) => PortfolioBloc()),
+        BlocProvider<ContactBloc>(create: (context) => ContactBloc()),
+        BlocProvider<ProjectCardBloc>(create: (context) => ProjectCardBloc()),
         BlocProvider<ProjectListingBloc>(
           create: (context) => ProjectListingBloc(),
         ),
       ],
       child: MaterialApp(
-        title: 'Stackova - Professional Development Services',
+        title: '${AppConfig.companyName} - ${AppConfig.companyTagline}',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primarySwatch: Colors.blue,
-          primaryColor: const Color(0xFF1E3A8A),
-          scaffoldBackgroundColor: Colors.white,
-          textTheme: GoogleFonts.interTextTheme(
-            Theme.of(context).textTheme,
-          ),
+          primaryColor: Color(AppConfig.primaryColorValue),
+          scaffoldBackgroundColor: AppConstants.backgroundColor,
+          textTheme: GoogleFonts.interTextTheme(Theme.of(context).textTheme),
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF1E3A8A),
+            seedColor: Color(AppConfig.primaryColorValue),
             brightness: Brightness.light,
           ),
           useMaterial3: true,
@@ -77,10 +66,12 @@ class StackovaApp extends StatelessWidget {
             const Breakpoint(start: 1440, end: double.infinity, name: '4K'),
           ],
         ),
-        home: const HomeScreen(),
+        home: const HomeScreen().withErrorBoundary(
+          errorTitle: 'Application Error',
+          errorMessage:
+              'The application encountered an unexpected error. Please refresh the page to continue.',
+        ),
       ),
     );
   }
 }
-
-

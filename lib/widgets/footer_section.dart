@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:responsive_framework/responsive_framework.dart';
+import '../config/app_config.dart';
 
 class FooterSection extends StatelessWidget {
   const FooterSection({super.key});
@@ -98,7 +99,7 @@ class FooterSection extends StatelessWidget {
               children: [
                 if (isMobile) ...[
                   Text(
-                    '© 2024 Stackova. All rights reserved.',
+                    '© 2024 ${AppConfig.companyName}. All rights reserved.',
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       color: Colors.white.withValues(alpha: 0.7),
@@ -112,7 +113,7 @@ class FooterSection extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '© 2024 Stackova. All rights reserved.',
+                        '© 2024 ${AppConfig.companyName}. All rights reserved.',
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           color: Colors.white.withValues(alpha: 0.7),
@@ -155,7 +156,7 @@ class FooterSection extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Text(
-              'Stackova',
+              AppConfig.companyName,
               style: GoogleFonts.inter(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -170,7 +171,7 @@ class FooterSection extends StatelessWidget {
         Container(
           constraints: const BoxConstraints(maxWidth: 300),
           child: Text(
-            'We create innovative digital solutions that transform businesses and deliver exceptional user experiences.',
+            AppConfig.companyDescription,
             style: GoogleFonts.inter(
               fontSize: 14,
               color: Colors.white.withValues(alpha: 0.7),
@@ -261,19 +262,19 @@ class FooterSection extends StatelessWidget {
         const SizedBox(height: 16),
         _buildContactItem(
           FontAwesomeIcons.envelope,
-          'hello@stackova.com',
+          AppConfig.email,
           isMobile,
         ),
         const SizedBox(height: 8),
         _buildContactItem(
           FontAwesomeIcons.phone,
-          '+1 (555) 123-4567',
+          AppConfig.phone,
           isMobile,
         ),
         const SizedBox(height: 8),
         _buildContactItem(
           FontAwesomeIcons.locationDot,
-          'Tech City, TC 12345',
+          AppConfig.shortAddress,
           isMobile,
         ),
       ],
@@ -281,23 +282,35 @@ class FooterSection extends StatelessWidget {
   }
 
   Widget _buildContactItem(IconData icon, String text, bool isMobile) {
-    return Row(
-      mainAxisAlignment: isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
-      children: [
-        Icon(
-          icon,
-          size: 14,
-          color: const Color(0xFF3B82F6),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: Colors.white.withValues(alpha: 0.7),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          width: constraints.maxWidth,
+          child: Row(
+            mainAxisAlignment: isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 8,
+                color: const Color(0xFF3B82F6),
+              ),
+              const SizedBox(width: 2),
+              Expanded(
+                child: Text(
+                  text,
+                  style: GoogleFonts.inter(
+                    fontSize: 8,
+                    color: Colors.white.withValues(alpha: 0.7),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 

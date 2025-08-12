@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -30,6 +31,7 @@ class ProjectListingScreen extends StatefulWidget {
 
 class _ProjectListingScreenState extends State<ProjectListingScreen> {
   final ScrollController _scrollController = ScrollController();
+  Timer? _scrollDebounceTimer;
 
   @override
   void initState() {
@@ -45,13 +47,20 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _scrollDebounceTimer?.cancel();
     super.dispose();
   }
 
   void _onScroll() {
-    context.read<ProjectListingBloc>().add(
-      ScrollPositionChanged(_scrollController.offset),
-    );
+    // Debounce scroll events to improve performance
+    _scrollDebounceTimer?.cancel();
+    _scrollDebounceTimer = Timer(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        context.read<ProjectListingBloc>().add(
+          ScrollPositionChanged(_scrollController.offset),
+        );
+      }
+    });
   }
 
   String _getCategoryId(String projectType) {
@@ -80,11 +89,67 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
 
     return BlocBuilder<ProjectListingBloc, ProjectListingState>(
       builder: (context, state) {
-        if (state is! ProjectListingLoaded) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+        if (state is ProjectListingLoading || state is ProjectListingInitial) {
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF60A5FA)),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Loading projects...',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         }
+
+        if (state is ProjectListingError) {
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Colors.red[400],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error loading projects',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    state.message,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final loadedState = state as ProjectListingLoaded;
 
         return Scaffold(
           backgroundColor: Colors.white,
@@ -97,23 +162,27 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
                 child: Column(
                   children: [
                     // Hero Section
-                    _buildHeroSection(isMobile, isTablet, state),
+                    _buildHeroSection(isMobile, isTablet, loadedState),
+
+                    // Category Description Section
+                    if (widget.projectType != 'all')
+                      _buildCategoryDescriptionSection(isMobile, isTablet),
 
                     // Category Filters (only for "All Software Projects")
                     if (widget.projectType == 'all') ...[
-                      _buildCategoryFilters(isMobile, isTablet, state),
+                      _buildCategoryFilters(isMobile, isTablet, loadedState),
                       const SizedBox(height: 40),
                     ],
 
                     // Projects List
-                    _buildProjectsList(isMobile, isTablet, state),
+                    _buildProjectsList(isMobile, isTablet, loadedState),
 
                     const SizedBox(height: 80),
                   ],
                 ),
                 ),
                 CustomNavigationBar(
-                  isScrolled: state.isScrolled,
+                  isScrolled: loadedState.isScrolled,
                   scrollController: _scrollController,
                 ),
               ],
@@ -346,38 +415,29 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
 
                 if (constraints.maxWidth >= 1200) {
                   crossAxisCount = 4;
-                  childAspectRatio = 1.1;
+                  childAspectRatio = 0.75; // Taller cards
                   spacing = 20;
                 } else if (constraints.maxWidth >= 900) {
                   crossAxisCount = 3;
-                  childAspectRatio = 1.2;
+                  childAspectRatio = 0.8; // Taller cards
                   spacing = 18;
                 } else if (constraints.maxWidth >= 600) {
                   crossAxisCount = 2;
-                  childAspectRatio = 1.25;
+                  childAspectRatio = 0.85; // Taller cards
                   spacing = 16;
                 } else {
                   crossAxisCount = 1;
-                  childAspectRatio = 1.4;
+                  childAspectRatio = 1.0; // Taller cards
                   spacing = 12;
                 }
 
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: spacing,
-                    mainAxisSpacing: spacing,
-                    childAspectRatio: childAspectRatio,
-                  ),
-                  itemCount: state.filteredProjects.length,
-                  itemBuilder: (context, index) {
-                    return ProjectCard(
-                      project: state.filteredProjects[index],
-                      isCompact: constraints.maxWidth < 600,
-                    );
-                  },
+                // Use ListView.builder with lazy loading for better performance
+                return _buildOptimizedProjectGrid(
+                  state.filteredProjects,
+                  crossAxisCount,
+                  spacing,
+                  childAspectRatio,
+                  constraints.maxWidth < 600,
                 );
               },
             ),
@@ -418,6 +478,146 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCategoryDescriptionSection(bool isMobile, bool isTablet) {
+    final categoryContent = ProjectsData.getCategoryContentByType(widget.projectType);
+
+    if (categoryContent == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 20 : (isTablet ? 40 : 80),
+        vertical: 40,
+      ),
+      color: const Color(0xFFF8FAFC),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Category title with icon
+          Row(
+            children: [
+              Text(
+                categoryContent.icon,
+                style: TextStyle(fontSize: isMobile ? 28 : 32),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  categoryContent.title,
+                  style: GoogleFonts.inter(
+                    fontSize: isMobile ? 24 : 28,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1E293B),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // Category content
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Text(
+              categoryContent.content,
+              style: GoogleFonts.inter(
+                fontSize: isMobile ? 14 : 16,
+                color: const Color(0xFF64748B),
+                height: 1.6,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOptimizedProjectGrid(
+    List<Project> projects,
+    int crossAxisCount,
+    double spacing,
+    double childAspectRatio,
+    bool isCompact,
+  ) {
+    // Limit projects to prevent performance issues
+    final limitedProjects = projects.take(50).toList();
+    
+    // Use ListView.builder for single column layout
+    if (crossAxisCount == 1) {
+      return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: limitedProjects.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: index < limitedProjects.length - 1 ? spacing : 0),
+            child: RepaintBoundary(
+              child: ProjectCard(
+                project: limitedProjects[index],
+                isCompact: isCompact,
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    // For multi-column layout, use a custom layout that doesn't constrain height
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Group projects into rows
+        final rows = <List<Project>>[];
+        for (int i = 0; i < limitedProjects.length; i += crossAxisCount) {
+          final end = (i + crossAxisCount < limitedProjects.length) ? i + crossAxisCount : limitedProjects.length;
+          rows.add(limitedProjects.sublist(i, end));
+        }
+
+        return Column(
+          children: rows.asMap().entries.map((entry) {
+            final rowIndex = entry.key;
+            final rowProjects = entry.value;
+
+            return Padding(
+              padding: EdgeInsets.only(bottom: rowIndex < rows.length - 1 ? spacing : 0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: rowProjects.asMap().entries.map((projectEntry) {
+                  final projectIndex = projectEntry.key;
+                  final project = projectEntry.value;
+
+                  return Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        right: projectIndex < rowProjects.length - 1 ? spacing : 0,
+                      ),
+                      child: RepaintBoundary(
+                        child: ProjectCard(
+                          project: project,
+                          isCompact: isCompact,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 

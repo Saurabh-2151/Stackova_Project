@@ -155,7 +155,7 @@ class ExpandedProjectsDatabase {
 
   // WEB APPLICATIONS (80+ projects)
   static const webApplications = ProjectCategory(
-    name: "Web Applications",
+    name: "Web Development",
     description: "Modern web-based solutions and platforms",
     icon: "🌐",
     projects: [

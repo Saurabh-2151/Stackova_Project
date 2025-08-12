@@ -44,10 +44,6 @@ class ServicesBloc extends Bloc<ServicesEvent, ServicesState> {
     if (state is ServicesLoaded) {
       final currentState = state as ServicesLoaded;
       
-      // Find the selected service
-      final selectedService = currentState.services
-          .firstWhere((service) => service.id == event.serviceId);
-      
       // Navigate to project listing screen
       // This would typically be handled by a navigation service or router
       emit(currentState.copyWith(selectedServiceId: event.serviceId));

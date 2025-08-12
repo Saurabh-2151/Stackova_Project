@@ -12,6 +12,10 @@ class ProjectListingInitial extends ProjectListingState {
   const ProjectListingInitial();
 }
 
+class ProjectListingLoading extends ProjectListingState {
+  const ProjectListingLoading();
+}
+
 class ProjectListingLoaded extends ProjectListingState {
   final List<Project> allProjects;
   final List<Project> filteredProjects;

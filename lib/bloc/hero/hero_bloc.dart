@@ -63,13 +63,22 @@ class HeroBloc extends Bloc<HeroEvent, HeroState> {
     try {
       _videoController = VideoPlayerController.asset('assets/homeVedio.mp4');
       
-      await _videoController!.initialize();
+      // Add timeout for video initialization
+      await _videoController!.initialize().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Video initialization timeout');
+        },
+      );
+      
       await _videoController!.setLooping(true);
       await _videoController!.setVolume(0.0);
       await _videoController!.play();
 
       add(VideoInitialized(_videoController!));
     } catch (e) {
+      // Log error for debugging
+      print('Video initialization error: $e');
       add(VideoError(e.toString()));
     }
   }

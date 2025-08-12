@@ -34,7 +34,7 @@ class UpdateFormField extends ContactEvent {
 }
 
 class SubmitContactForm extends ContactEvent {
-  const SubmitContactForm();
+  const SubmitContactForm(Map<String, String> map);
 }
 
 class ResetContactForm extends ContactEvent {

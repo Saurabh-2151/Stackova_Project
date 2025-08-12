@@ -216,7 +216,7 @@ class ExpandedProjectsDatabasePart3 {
       "Wireless Security Monitoring Tool",
       
       // Application Security
-      "Web Application Security Scanner",
+      "Web Security Scanner",
       "API Security Testing Platform",
       "Code Vulnerability Analyzer",
       "Secure Software Development Lifecycle Tool",

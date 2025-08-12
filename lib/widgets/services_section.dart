@@ -8,7 +8,6 @@ import '../screens/project_listing_screen.dart';
 import '../bloc/services/services_bloc.dart';
 import '../bloc/services/services_event.dart';
 import '../bloc/services/services_state.dart';
-import '../data/comprehensive_projects_database.dart';
 
 class ServicesSection extends StatefulWidget {
   const ServicesSection({super.key});
@@ -23,75 +22,39 @@ class _ServicesSectionState extends State<ServicesSection>
   final List<ServiceItem> services = [
     ServiceItem(
       icon: FontAwesomeIcons.globe,
-      title: 'Web Application Development',
+      title: 'Web Development',
       description: 'Modern, responsive web applications built with cutting-edge technologies. From simple websites to complex enterprise solutions.',
       features: ['Responsive Design', 'Progressive Web Apps', 'E-commerce Solutions', 'CMS Development'],
     ),
     ServiceItem(
       icon: FontAwesomeIcons.android,
-      title: 'Android Application Development',
+      title: 'Android & IOS App Development',
       description: 'Native Android apps that deliver exceptional user experiences with optimal performance and seamless integration.',
       features: ['Native Android', 'Material Design', 'Play Store Optimization', 'Performance Tuning'],
     ),
-    ServiceItem(
-      icon: FontAwesomeIcons.apple,
-      title: 'iOS Application Development',
-      description: 'Beautiful iOS applications following Apple\'s design guidelines with smooth animations and intuitive interfaces.',
-      features: ['Native iOS', 'Human Interface Guidelines', 'App Store Optimization', 'Core Data Integration'],
+     ServiceItem(
+      icon: FontAwesomeIcons.robot,
+      title: 'AI & ML Development',
+      description: 'Intelligent systems powered by artificial intelligence and machine learning algorithms for automation and insights.',
+      features: ['Computer Vision', 'Natural Language Processing', 'Predictive Analytics', 'AI Chatbots'],
     ),
     ServiceItem(
       icon: FontAwesomeIcons.robot,
-      title: 'AI & Machine Learning Solutions',
+      title: 'Angular Js React Node Js Development',
       description: 'Intelligent systems powered by artificial intelligence and machine learning algorithms for automation and insights.',
       features: ['Computer Vision', 'Natural Language Processing', 'Predictive Analytics', 'AI Chatbots'],
     ),
     ServiceItem(
       icon: FontAwesomeIcons.link,
-      title: 'Blockchain & Cryptocurrency',
+      title: 'Blockchain & Cryptocurrency Development',
       description: 'Decentralized applications, smart contracts, and blockchain-based solutions for secure and transparent systems.',
       features: ['Smart Contracts', 'DeFi Platforms', 'NFT Marketplaces', 'Cryptocurrency Wallets'],
     ),
     ServiceItem(
-      icon: FontAwesomeIcons.cube,
-      title: 'AR & VR Development',
-      description: 'Immersive augmented and virtual reality experiences for education, training, and entertainment.',
-      features: ['AR Applications', 'VR Simulations', 'Mixed Reality', '3D Modeling'],
-    ),
-    ServiceItem(
       icon: FontAwesomeIcons.chartLine,
-      title: 'Data Science & Analytics',
+      title: 'Data Science Development',
       description: 'Data-driven insights and analytics platforms to help businesses make informed decisions.',
       features: ['Business Intelligence', 'Data Visualization', 'Predictive Modeling', 'Big Data Processing'],
-    ),
-    ServiceItem(
-      icon: FontAwesomeIcons.microchip,
-      title: 'IoT & Embedded Systems',
-      description: 'Internet of Things solutions and embedded systems for smart devices and automation.',
-      features: ['Smart Home Systems', 'Industrial IoT', 'Sensor Networks', 'Edge Computing'],
-    ),
-    ServiceItem(
-      icon: FontAwesomeIcons.shield,
-      title: 'Cybersecurity Solutions',
-      description: 'Comprehensive security solutions to protect your digital assets and ensure data privacy.',
-      features: ['Network Security', 'Threat Detection', 'Security Audits', 'Compliance Management'],
-    ),
-    ServiceItem(
-      icon: FontAwesomeIcons.cloud,
-      title: 'Cloud & DevOps',
-      description: 'Cloud infrastructure and DevOps solutions for scalable, reliable, and efficient software deployment.',
-      features: ['Cloud Migration', 'CI/CD Pipelines', 'Infrastructure as Code', 'Monitoring & Analytics'],
-    ),
-    ServiceItem(
-      icon: FontAwesomeIcons.creditCard,
-      title: 'FinTech Solutions',
-      description: 'Financial technology solutions including digital banking, payment systems, and investment platforms.',
-      features: ['Digital Banking', 'Payment Gateways', 'Robo-Advisors', 'Cryptocurrency Trading'],
-    ),
-    ServiceItem(
-      icon: FontAwesomeIcons.graduationCap,
-      title: 'EdTech Platforms',
-      description: 'Educational technology solutions for online learning, student management, and digital classrooms.',
-      features: ['Learning Management Systems', 'Virtual Classrooms', 'Educational Games', 'Student Analytics'],
     ),
   ];
 
@@ -105,10 +68,7 @@ class _ServicesSectionState extends State<ServicesSection>
     servicesBloc.initializeAnimationController(this);
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
+
 
   void _onVisibilityChanged(VisibilityInfo info) {
     if (info.visibleFraction > 0.3) {
@@ -118,7 +78,7 @@ class _ServicesSectionState extends State<ServicesSection>
     }
   }
 
-  void _navigateToProjectListing(ServiceItem service) {
+  void _navigateToProjectListing(ServiceItem service) async {
     String projectType = 'all';
     IconData icon = FontAwesomeIcons.code;
     Color color = const Color(0xFF3B82F6);
@@ -137,17 +97,50 @@ class _ServicesSectionState extends State<ServicesSection>
       color = const Color(0xFF6366F1);
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProjectListingScreen(
-          projectType: projectType,
-          title: service.title,
-          icon: icon,
-          color: color,
+    // Show loading indicator for better UX
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF60A5FA)),
         ),
       ),
     );
+
+    // Preload data asynchronously
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    if (mounted) {
+      Navigator.of(context).pop(); // Remove loading dialog
+
+      await Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => ProjectListingScreen(
+            projectType: projectType,
+            title: service.title,
+            icon: icon,
+            color: color,
+          ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            const begin = Offset(1.0, 0.0);
+            const end = Offset.zero;
+            const curve = Curves.easeInOut;
+
+            var tween = Tween(begin: begin, end: end).chain(
+              CurveTween(curve: curve),
+            );
+
+            return SlideTransition(
+              position: animation.drive(tween),
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
+      );
+    }
   }
 
   @override

@@ -56,10 +56,13 @@ class CustomNavigationBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // Logo
-            GestureDetector(
-              onTap: () => _scrollToSection(context, 0),
-              child: Row(
-                children: [
+            Semantics(
+              label: 'Stackova logo, tap to go to home section',
+              button: true,
+              child: GestureDetector(
+                onTap: () => _scrollToSection(context, 0),
+                child: Row(
+                  children: [
                   Container(
                     width: isMobile ? 40 : 50,
                     height: isMobile ? 40 : 50,
@@ -109,7 +112,8 @@ class CustomNavigationBar extends StatelessWidget {
                         color: isScrolled ? Colors.black : Colors.white,
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
             ),
 
@@ -130,14 +134,18 @@ class CustomNavigationBar extends StatelessWidget {
               ),
             ] else ...[
               // Mobile Menu Button
-              IconButton(
-                onPressed: () {
-                  context.read<NavigationBloc>().add(const ToggleMobileMenu());
-                },
-                icon: Icon(
-                  isMobileMenuOpen ? Icons.close : Icons.menu,
-                  color: isScrolled ? Colors.black : Colors.white,
-                  size: 28,
+              Semantics(
+                label: isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu',
+                button: true,
+                child: IconButton(
+                  onPressed: () {
+                    context.read<NavigationBloc>().add(const ToggleMobileMenu());
+                  },
+                  icon: Icon(
+                    isMobileMenuOpen ? Icons.close : Icons.menu,
+                    color: isScrolled ? Colors.black : Colors.white,
+                    size: 28,
+                  ),
                 ),
               ),
             ],
@@ -154,17 +162,21 @@ class CustomNavigationBar extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: isTablet ? 12 : 20),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 44), // Touch-friendly
-          alignment: Alignment.center,
-          child: Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: isTablet ? 14 : 16,
-              fontWeight: FontWeight.w500,
-              color: isScrolled ? Colors.black : Colors.white,
+      child: Semantics(
+        label: 'Navigate to $title section',
+        button: true,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 44), // Touch-friendly
+            alignment: Alignment.center,
+            child: Text(
+              title,
+              style: GoogleFonts.inter(
+                fontSize: isTablet ? 14 : 16,
+                fontWeight: FontWeight.w500,
+                color: isScrolled ? Colors.black : Colors.white,
+              ),
             ),
           ),
         ),

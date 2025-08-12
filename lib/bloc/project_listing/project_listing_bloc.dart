@@ -14,11 +14,17 @@ class ProjectListingBloc extends Bloc<ProjectListingEvent, ProjectListingState> 
   void _onInitializeProjectListing(
     InitializeProjectListing event,
     Emitter<ProjectListingState> emit,
-  ) {
+  ) async {
     try {
+      // Emit loading state immediately
+      emit(const ProjectListingLoading());
+
+      // Load data asynchronously to avoid blocking UI
+      await Future.delayed(const Duration(milliseconds: 50));
+
       final allProjects = ProjectsData.getAllProjectsExpanded();
       final filteredProjects = _filterProjectsByCategory(allProjects, event.categoryId);
-      
+
       emit(ProjectListingLoaded(
         allProjects: allProjects,
         filteredProjects: filteredProjects,

@@ -411,16 +411,16 @@ class _AboutSectionState extends State<AboutSection>
           Text(
             stat.number,
             style: GoogleFonts.inter(
-              fontSize: isMobile ? 28 : 36,
+              fontSize: isMobile ? 26 : 34,
               fontWeight: FontWeight.w800,
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             stat.label,
             style: GoogleFonts.inter(
-              fontSize: isMobile ? 12 : 14,
+              fontSize: isMobile ? 10 : 12,
               fontWeight: FontWeight.w500,
               color: Colors.white.withValues(alpha: 0.9),
             ),

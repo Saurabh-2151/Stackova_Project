@@ -7,6 +7,9 @@ import '../screens/project_details_screen.dart';
 import '../bloc/project_card/project_card_bloc.dart';
 import '../bloc/project_card/project_card_event.dart';
 import '../bloc/project_card/project_card_state.dart';
+import '../utils/analytics_helper.dart';
+import '../utils/performance_monitor.dart';
+
 
 class ProjectCard extends StatefulWidget {
   final Project project;
@@ -22,6 +25,8 @@ class ProjectCard extends StatefulWidget {
   State<ProjectCard> createState() => _ProjectCardState();
 }
 
+
+
 class _ProjectCardState extends State<ProjectCard>
     with SingleTickerProviderStateMixin {
 
@@ -35,12 +40,16 @@ class _ProjectCardState extends State<ProjectCard>
     projectCardBloc.initializeAnimationController(widget.project.id, this);
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
+
 
   void _onTap() {
+    // Track analytics
+    AnalyticsHelper().trackProjectView(widget.project.id, widget.project.title);
+    AnalyticsHelper().trackUserInteraction('tap', 'project_card', parameters: {
+      'project_id': widget.project.id,
+      'project_title': widget.project.title,
+    });
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ProjectDetailsScreen(projectId: widget.project.id),
@@ -102,7 +111,7 @@ class _ProjectCardState extends State<ProjectCard>
                 curve: Curves.easeInOut,
                 child: Card(
                   elevation: elevationAnimation.value,
-                  shadowColor: Colors.black.withOpacity(0.1),
+                  shadowColor: Colors.black.withValues(alpha: 0.1),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -118,182 +127,123 @@ class _ProjectCardState extends State<ProjectCard>
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Project Image Placeholder
-                        Container(
-                          height: widget.isCompact ? 120 : 160,
-                          decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(16),
-                              topRight: Radius.circular(16),
-                            ),
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                const Color(0xFF60A5FA).withOpacity(0.8),
-                                const Color(0xFF3B82F6).withOpacity(0.8),
-                              ],
-                            ),
-                          ),
-                          child: Stack(
+                        // Ultra-compact design
+                        Padding(
+                          padding: EdgeInsets.all(widget.isCompact ? 4 : 6),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              // Background pattern
-                              Positioned.fill(
-                                child: CustomPaint(
-                                  painter: _ProjectCardPatternPainter(),
-                                ),
-                              ),
-                              // Category badge
-                              Positioned(
-                                top: 12,
-                                right: 12,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.9),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    widget.project.category,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF3B82F6),
+                              // Category and title in one line
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: widget.isCompact ? 3 : 4,
+                                      vertical: widget.isCompact ? 1 : 2,
                                     ),
-                                  ),
-                                ),
-                              ),
-                              // Click indicator
-                              if (isHovered)
-                                Positioned.fill(
-                                  child: Container(
                                     decoration: BoxDecoration(
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(16),
-                                        topRight: Radius.circular(16),
-                                      ),
-                                      color: Colors.black.withOpacity(0.1),
+                                      color: const Color(0xFF3B82F6),
+                                      borderRadius: BorderRadius.circular(2),
                                     ),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.visibility,
+                                    child: Text(
+                                      widget.project.category.substring(0, 1).toUpperCase(),
+                                      style: GoogleFonts.inter(
+                                        fontSize: widget.isCompact ? 6 : 7,
+                                        fontWeight: FontWeight.w600,
                                         color: Colors.white,
-                                        size: 32,
                                       ),
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
-                        ),
-
-                        // Project Content
-                        Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Project Title
-                                Text(
-                                  widget.project.title,
-                                  style: GoogleFonts.inter(
-                                    fontSize: widget.isCompact ? 16 : 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black,
-                                    height: 1.3,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                
-                                const SizedBox(height: 8),
-                                
-                                // Project Description
-                                Expanded(
-                                  child: Text(
-                                    widget.project.description,
-                                    style: GoogleFonts.inter(
-                                      fontSize: widget.isCompact ? 13 : 14,
-                                      color: Colors.grey[600],
-                                      height: 1.4,
-                                    ),
-                                    maxLines: widget.isCompact ? 2 : 3,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                
-                                const SizedBox(height: 12),
-                                
-                                // Technologies
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 6,
-                                  children: widget.project.technologies
-                                      .take(3)
-                                      .map((tech) => _buildTechChip(tech))
-                                      .toList(),
-                                ),
-                                
-                                if (widget.project.technologies.length > 3) ...[
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    '+${widget.project.technologies.length - 3} more',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      color: Colors.grey[500],
-                                      fontWeight: FontWeight.w500,
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      widget.project.title,
+                                      style: GoogleFonts.inter(
+                                        fontSize: widget.isCompact ? 8 : 9,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF1E293B),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
-                                
-                                const SizedBox(height: 16),
-                                
-                                // View Details Button
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton(
-                                    onPressed: _onTap,
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: const Color(0xFF60A5FA),
-                                      side: BorderSide(
-                                        color: isHovered
-                                            ? const Color(0xFF60A5FA)
-                                            : Colors.grey[300]!,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
+                              ),
+
+                              SizedBox(height: widget.isCompact ? 2 : 3),
+
+                              // Description (very short)
+                              Text(
+                                widget.project.description,
+                                style: GoogleFonts.inter(
+                                  fontSize: widget.isCompact ? 7 : 8,
+                                  color: Colors.grey[600],
+                                  height: 1.1,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+
+                              SizedBox(height: widget.isCompact ? 2 : 3),
+
+                              // Single tech chip
+                              if (widget.project.technologies.isNotEmpty)
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: widget.isCompact ? 2 : 3,
+                                    vertical: widget.isCompact ? 1 : 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF60A5FA).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                  child: Text(
+                                    widget.project.technologies.first,
+                                    style: GoogleFonts.inter(
+                                      fontSize: widget.isCompact ? 6 : 7,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF60A5FA),
                                     ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          'View Details',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Icon(
-                                          Icons.arrow_forward,
-                                          size: 16,
-                                          color: isHovered
-                                              ? const Color(0xFF60A5FA)
-                                              : Colors.grey[500],
-                                        ),
-                                      ],
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+
+                              SizedBox(height: widget.isCompact ? 2 : 3),
+
+                              // Minimal button
+                              SizedBox(
+                                width: double.infinity,
+                                height: widget.isCompact ? 16 : 18,
+                                child: OutlinedButton(
+                                  onPressed: _onTap,
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color(0xFF60A5FA),
+                                    side: BorderSide(
+                                      color: const Color(0xFF60A5FA),
+                                      width: 0.5,
+                                    ),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: widget.isCompact ? 4 : 6,
+                                      vertical: 0,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'View',
+                                    style: GoogleFonts.inter(
+                                      fontSize: widget.isCompact ? 7 : 8,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -368,50 +318,7 @@ class _ProjectCardState extends State<ProjectCard>
     );
   }
 
-  Widget _buildTechChip(String technology) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF60A5FA).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        technology,
-        style: GoogleFonts.inter(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-          color: const Color(0xFF60A5FA),
-        ),
-      ),
-    );
-  }
-}
 
-class _ProjectCardPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.1)
-      ..strokeWidth = 1;
 
-    // Draw a subtle grid pattern
-    for (double i = 0; i < size.width; i += 20) {
-      canvas.drawLine(
-        Offset(i, 0),
-        Offset(i, size.height),
-        paint,
-      );
-    }
 
-    for (double i = 0; i < size.height; i += 20) {
-      canvas.drawLine(
-        Offset(0, i),
-        Offset(size.width, i),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

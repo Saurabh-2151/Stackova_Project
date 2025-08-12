@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../data/project_data.dart';
+import '../../models/project.dart';
+import '../../data/projects_data.dart';
 import 'projects_event.dart';
 import 'projects_state.dart';
 
@@ -28,8 +29,8 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
     emit(const ProjectsLoading());
     
     try {
-      final allProjects = ProjectData.projects;
-      final categories = ProjectData.categories;
+      final allProjects = ProjectsData.getAllProjectsExpanded();
+      final categories = ['All', 'Web App', 'Android App', 'iOS App'];
       final selectedCategoryId = event.categoryId ?? 'all';
       
       List<Project> filteredProjects;
@@ -37,7 +38,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
         filteredProjects = allProjects;
       } else {
         filteredProjects = allProjects
-            .where((project) => project.categoryId == selectedCategoryId)
+            .where((project) => project.category == selectedCategoryId)
             .toList();
       }
 
@@ -66,7 +67,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
         filteredProjects = currentState.allProjects;
       } else {
         filteredProjects = currentState.allProjects
-            .where((project) => project.categoryId == event.categoryId)
+            .where((project) => project.category == event.categoryId)
             .toList();
       }
 
@@ -98,7 +99,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
         baseProjects = currentState.allProjects;
       } else {
         baseProjects = currentState.allProjects
-            .where((project) => project.categoryId == currentState.selectedCategoryId)
+            .where((project) => project.category == currentState.selectedCategoryId)
             .toList();
       }
 

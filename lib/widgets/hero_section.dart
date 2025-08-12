@@ -35,10 +35,7 @@ class _HeroSectionState extends State<HeroSection>
     heroBloc.initializeAnimationControllers(this);
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
+
 
   @override
   Widget build(BuildContext context) {

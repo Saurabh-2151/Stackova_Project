@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../data/project_data.dart';
+import '../../models/project.dart';
 
 abstract class ProjectsState extends Equatable {
   const ProjectsState();
@@ -19,7 +19,7 @@ class ProjectsLoading extends ProjectsState {
 class ProjectsLoaded extends ProjectsState {
   final List<Project> allProjects;
   final List<Project> filteredProjects;
-  final List<ProjectCategory> categories;
+  final List<String> categories;
   final String selectedCategoryId;
   final String searchQuery;
   final bool isVisible;
@@ -46,7 +46,7 @@ class ProjectsLoaded extends ProjectsState {
   ProjectsLoaded copyWith({
     List<Project>? allProjects,
     List<Project>? filteredProjects,
-    List<ProjectCategory>? categories,
+    List<String>? categories,
     String? selectedCategoryId,
     String? searchQuery,
     bool? isVisible,

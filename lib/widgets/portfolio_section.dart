@@ -72,10 +72,7 @@ class _PortfolioSectionState extends State<PortfolioSection>
     portfolioBloc.initializeAnimationController(this);
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
+
 
   void _onVisibilityChanged(VisibilityInfo info) {
     if (info.visibleFraction > 0.3) {
