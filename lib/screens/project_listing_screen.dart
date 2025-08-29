@@ -181,10 +181,10 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
                   ],
                 ),
                 ),
-                CustomNavigationBar(
-                  isScrolled: loadedState.isScrolled,
-                  scrollController: _scrollController,
-                ),
+                // CustomNavigationBar(
+                //   isScrolled: loadedState.isScrolled,
+                //   scrollController: _scrollController,
+                // ),
               ],
               ),
             ),
@@ -208,8 +208,8 @@ class _ProjectListingScreenState extends State<ProjectListingScreen> {
       ),
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 20 : (isTablet ? 40 : 80),
-          vertical: 60,
+          horizontal: isMobile ? 20 : 40,
+          vertical: 20,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

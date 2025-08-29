@@ -6,16 +6,16 @@ class AppConfig {
       'We create innovative digital solutions that transform businesses and deliver exceptional user experiences.';
 
   // Contact Information
-  static const String email = 'hello@stackova.com';
-  static const String phone = '+1 (555) 123-4567';
-  static const String address = '123 Business St, Tech City, TC 12345';
-  static const String shortAddress = 'Tech City, TC';
+  static const String email = 'stackova.tech@gmail.com';
+  static const String phone = '7219185759, 9767847605';
+  static const String address = 'City Vista, Kharadi, Pune-411014';
+  static const String shortAddress = 'City Vista, Kharadi';
 
   // Social Media Links
-  static const String linkedinUrl = 'https://linkedin.com/company/stackova';
+  static const String linkedinUrl = 'https://www.linkedin.com/company/stackova/';
   static const String twitterUrl = 'https://twitter.com/stackova';
   static const String githubUrl = 'https://github.com/stackova';
-  static const String instagramUrl = 'https://instagram.com/stackova';
+  static const String instagramUrl = 'https://www.instagram.com/stack.ova';
 
   // App Settings
   static const int maxProjectsPerPage = 50;

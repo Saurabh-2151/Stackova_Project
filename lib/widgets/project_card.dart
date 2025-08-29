@@ -131,7 +131,7 @@ class _ProjectCardState extends State<ProjectCard>
                       children: [
                         // Ultra-compact design
                         Padding(
-                          padding: EdgeInsets.all(widget.isCompact ? 4 : 6),
+                          padding: EdgeInsets.all(widget.isCompact ? 4 : 16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
@@ -140,10 +140,12 @@ class _ProjectCardState extends State<ProjectCard>
                               Row(
                                 children: [
                                   Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: widget.isCompact ? 3 : 4,
-                                      vertical: widget.isCompact ? 1 : 2,
-                                    ),
+                                    width: 15,
+                                    height : 15,
+                                    // padding: EdgeInsets.symmetric(
+                                    //   horizontal: widget.isCompact ? 3 : 4,
+                                    //   vertical: widget.isCompact ? 1 : 2,
+                                    // ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF3B82F6),
                                       borderRadius: BorderRadius.circular(2),
@@ -151,7 +153,7 @@ class _ProjectCardState extends State<ProjectCard>
                                     child: Text(
                                       widget.project.category.substring(0, 1).toUpperCase(),
                                       style: GoogleFonts.inter(
-                                        fontSize: widget.isCompact ? 6 : 7,
+                                        fontSize: widget.isCompact ? 6 : 14,
                                         fontWeight: FontWeight.w600,
                                         color: Colors.white,
                                       ),
@@ -162,11 +164,11 @@ class _ProjectCardState extends State<ProjectCard>
                                     child: Text(
                                       widget.project.title,
                                       style: GoogleFonts.inter(
-                                        fontSize: widget.isCompact ? 8 : 9,
+                                        fontSize: widget.isCompact ? 8 : 16,
                                         fontWeight: FontWeight.w600,
                                         color: const Color(0xFF1E293B),
                                       ),
-                                      maxLines: 1,
+                                      maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -179,11 +181,11 @@ class _ProjectCardState extends State<ProjectCard>
                               Text(
                                 widget.project.description,
                                 style: GoogleFonts.inter(
-                                  fontSize: widget.isCompact ? 7 : 8,
+                                  fontSize: widget.isCompact ? 7 : 12,
                                   color: Colors.grey[600],
                                   height: 1.1,
                                 ),
-                                maxLines: 1,
+                                maxLines: 4,
                                 overflow: TextOverflow.ellipsis,
                               ),
 
@@ -203,7 +205,7 @@ class _ProjectCardState extends State<ProjectCard>
                                   child: Text(
                                     widget.project.technologies.first,
                                     style: GoogleFonts.inter(
-                                      fontSize: widget.isCompact ? 6 : 7,
+                                      fontSize: widget.isCompact ? 6 : 12,
                                       fontWeight: FontWeight.w500,
                                       color: const Color(0xFF60A5FA),
                                     ),
@@ -212,12 +214,12 @@ class _ProjectCardState extends State<ProjectCard>
                                   ),
                                 ),
 
-                              SizedBox(height: widget.isCompact ? 2 : 3),
+                              SizedBox(height: widget.isCompact ? 2 : 8),
 
                               // Minimal button
                               SizedBox(
                                 width: double.infinity,
-                                height: widget.isCompact ? 16 : 18,
+                                height: widget.isCompact ? 16 : 40,
                                 child: OutlinedButton(
                                   onPressed: _onTap,
                                   style: OutlinedButton.styleFrom(
@@ -237,7 +239,7 @@ class _ProjectCardState extends State<ProjectCard>
                                   child: Text(
                                     'View',
                                     style: GoogleFonts.inter(
-                                      fontSize: widget.isCompact ? 7 : 8,
+                                      fontSize: widget.isCompact ? 7 : 14,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
